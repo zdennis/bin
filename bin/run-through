@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+SCRIPT_NAME = File.basename(__FILE__)
+
+options = { bundle_exec_commands: [], commands: [] }
+OptionParser.new do |opts|
+  bundle_exec_command_description = "A command to run execute on arguments using bundle exec. Can be passed multiple times."
+  opts.on("-b", "--bundle-exec-commands=COMMAND", bundle_exec_command_description) do |command|
+    options[:bundle_exec_commands] << command
+  end
+
+  command_description = "A command to execute on arguments. Can be passed multiple times"
+  opts.on("-c", "--command=COMMAND", command_description) do |command|
+    options[:commands] << command
+  end
+
+  opts.on("-h", "--help") do
+    puts <<~HELP
+      #{SCRIPT_NAME} runs files through shell commands
+
+      Example:
+
+        # Run all *.rb files in spec/ through rubocop and
+        # reek.
+        find spec -name "*.rb" | xargs run-through -c rubocop -c reek
+
+        # Run all *.rb files in spec/ through rubocop and
+        # reek with bundle exec.
+        find spec -name "*.rb" | xargs run-through -b rubocop -b reek
+
+    HELP
+    puts opts
+    exit
+  end
+end.parse!
+
+
+files = ARGV.join(' ')
+retval = true
+options[:commands].each do |command|
+  shell_command = "#{command} #{files}"
+  retval = system(shell_command) && retval
+end
+
+options[:bundle_exec_commands].each do |command|
+  bundle_exec_shell_command = "bundle exec #{command} #{files}"
+  retval = system(bundle_exec_shell_command)  && retval
+end
+
+if retval
+  exit(0)
+else
+  exit(1)
+end
