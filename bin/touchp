@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'fileutils'
+
+SCRIPT_NAME = File.basename(__FILE__)
+
+options = { }
+OptionParser.new do |opts|
+  opts.on("-h", "--help") do
+    puts <<~HELP
+      #{SCRIPT_NAME} touches a file along with the given directory
+      structure in its path. It is a combination of "mkdir -p" and "touch".
+
+      Example:
+
+        # Create the file wibble in foo/bar/baz and create each directory
+        # along the way if it doesn't exist.
+        touchp foo/bar/baz/wibble
+
+    HELP
+    puts opts
+    exit
+  end
+end.parse!
+
+
+ARGV.each do |filepath|
+  FileUtils.mkdir_p File.dirname(filepath)
+  FileUtils.touch filepath
+end
+
+exit(0)
