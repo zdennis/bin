@@ -4,8 +4,35 @@ require 'optparse'
 
 SCRIPT_NAME = File.basename(__FILE__)
 
+module RunThroughCLI
+  class BasicCommand
+    def initialize(command)
+      @command = command
+    end
+
+    def run(command, files:, verbose:)
+      fail NotImplementedError, "This must be implemented in a command subclass"
+    end
+  end
+
+  class ShellCommand < BasicCommand
+    def run(files:, verbose:)
+      cmd = "#{@command} #{files.join(' ')}"
+      puts "RUNNING COMMAND: #{cmd}" if verbose
+      system(cmd)
+    end
+  end
+
+  class BundleExecCommand < BasicCommand
+    def run(files:, verbose:)
+      cmd = "bundle exec #{@command} #{files.join(' ')}"
+      puts "RUNNING COMMAND: #{cmd}" if verbose
+      system(cmd)
+    end
+  end
+end
+
 options = {
-  bundle_exec_commands: [],
   commands: [],
   individual: false,
   verbose: false,
@@ -14,12 +41,12 @@ options = {
 OptionParser.new do |opts|
   bundle_exec_command_description = "A command to run execute on arguments using bundle exec. Can be passed multiple times."
   opts.on("-b", "--bundle-exec-commands=COMMAND", bundle_exec_command_description) do |command|
-    options[:bundle_exec_commands] << command
+    options[:commands] << RunThroughCLI::BundleExecCommand.new(command)
   end
 
   command_description = "A command to execute on arguments. Can be passed multiple times"
   opts.on("-c", "--command=COMMAND", command_description) do |command|
-    options[:commands] << command
+    options[:commands] << RunThroughCLI::ShellCommand.new(command)
   end
 
   opts.on("-i", "--individual", "Run each command once per file rather than once per all files") do
@@ -50,10 +77,6 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-def run_command(command, verbose:)
-  puts "RUNNING COMMAND: #{command}" if verbose
-  system(command)
-end
 
 def group_files(files, individual:)
   if individual
@@ -66,13 +89,8 @@ end
 file_groups = group_files(ARGV.dup, individual: options[:individual])
 success = true
 file_groups.each do |files|
-  files_for_command = files.join(' ')
   options[:commands].each do |command|
-    success = run_command("#{command} #{files_for_command}", verbose: options[:verbose]) && success
-  end
-
-  options[:bundle_exec_commands].each do |command|
-    success = run_command("bundle exec #{command} #{files_for_command}", verbose: options[:verbose]) && success
+    success = command.run(files: files, verbose: options[:verbose]) && success
   end
 end
 
