@@ -5,35 +5,32 @@ require 'optparse'
 SCRIPT_NAME = File.basename(__FILE__)
 
 module RunThroughCLI
-  class BasicCommand
+  class ShellCommand
     def initialize(command)
       @command = command
     end
 
-    def run(command, files:, verbose:)
-      fail NotImplementedError, "This must be implemented in a command subclass"
-    end
-  end
-
-  class ShellCommand < BasicCommand
-    def run(files:, verbose:)
+    def run(dry_run:, files:, verbose:)
       cmd = "#{@command} #{files.join(' ')}"
-      puts "RUNNING COMMAND: #{cmd}" if verbose
-      system(cmd)
+      if dry_run
+        puts "Would run: #{cmd}"
+        true
+      else
+        system(cmd)
+      end
     end
   end
 
-  class BundleExecCommand < BasicCommand
-    def run(files:, verbose:)
-      cmd = "bundle exec #{@command} #{files.join(' ')}"
-      puts "RUNNING COMMAND: #{cmd}" if verbose
-      system(cmd)
+  class BundleExecCommand < ShellCommand
+    def initialize(command)
+      @command = "bundle exec #{command}"
     end
   end
 end
 
 options = {
   commands: [],
+  dry_run: false,
   individual: false,
   verbose: false,
 }
@@ -53,8 +50,8 @@ OptionParser.new do |opts|
     options[:individual] = true
   end
 
-  opts.on("-V", "--verbose", "Prints out the commands being executed") do
-    options[:verbose] = true
+  opts.on("-n", "--dry-run", "Perform a dry run and print out what would happen") do
+    options[:dry_run] = true
   end
 
   opts.on("-h", "--help") do
@@ -90,7 +87,11 @@ file_groups = group_files(ARGV.dup, individual: options[:individual])
 success = true
 file_groups.each do |files|
   options[:commands].each do |command|
-    success = command.run(files: files, verbose: options[:verbose]) && success
+    success = command.run(
+      dry_run: options[:dry_run],
+      files: files,
+      verbose: options[:verbose]
+    ) && success
   end
 end
 
