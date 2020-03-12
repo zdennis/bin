@@ -1,0 +1,135 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+SCRIPT_NAME=File.basename(__FILE__)
+
+options = {
+  multiline: false,
+  pattern: nil,
+  summary: false,
+  terminus_pattern: nil
+}
+OptionParser.new do |opts|
+  opts.on("-p", "--pattern=PATTERN", "Regular expression used to match a line") do |pattern|
+    options[:pattern] = pattern
+  end
+
+  opts.on("-m", "--multiline", "Toggles on multiline matching. Uses pattern as both the terminal pattern. See -t|--terminus-pattern for using a different pattern to terminate a match.") do
+    options[:multiline] = true
+  end
+
+  opts.on("-t", "--terminus-pattern=PATTERN", "Regular expression used to denote the end of a match when using -m|--multiline") do |terminus_pattern|
+    options[:terminus_pattern] = terminus_pattern
+  end
+
+  opts.on("--summary") do |summary|
+    options[:summary] = true
+  end
+
+  opts.on("-h", "--help") do
+    puts opts
+    puts
+    puts <<~HELP
+      #{SCRIPT_NAME} groups output from STDIN by a given pattern.
+
+      For example, say you have foo.txt with the following contents:
+
+        foo: what
+          ^^^^
+        foo: baz
+        bar: huh
+          - huh 1
+          - huh 2
+          - huh 3
+        foo: wibble
+
+      EXAMPLE 1: Grouping lines with a regular expression
+
+        cat | group-by -p "^\w+:"
+
+        ============= bar: has 1 matches =============
+        bar: huh
+
+        ============= foo: has 3 matches =============
+        foo: what
+        foo: baz
+        foo: wibble
+
+      EXAMPLE 2: Matching on multiple lines using a regular expression
+
+        cat | group-by -p "^\w+:" -m
+
+        ============= bar: has 1 matches =============
+        bar: huh
+          - huh 1
+          - huh 2
+          - huh 3
+
+        ============= foo: has 3 matches =============
+        foo: what
+            ^^^^
+        foo: baz
+        foo: wibble
+
+      EXAMPLE 3: Matching on multiple lines using a custom terminus pattern
+
+        cat foo.txt | group-by -p "^\w+:" -m -t "huh"
+
+        ============= bar: has 1 matches =============
+        bar: huh
+
+        ============= foo: has 3 matches =============
+        foo: what
+            ^^^^
+        foo: baz
+        foo: wibble
+
+      Author: Zach Dennis (zach.dennis@gmail.com)
+              https://github.com/zdennis
+    HELP
+    exit
+  end
+end.parse!
+
+unless options[:pattern]
+  fail("Must provide a pattern via -p or --pattern. See -h or --help more information.")
+end
+
+if options[:multiline] && !options[:terminus_pattern]
+  options[:terminus_pattern] = options[:pattern]
+end
+
+content = STDIN.read
+
+grouped_data = Hash.new { |h,k| h[k] = [] }
+last_match = nil
+content.lines.each do |line|
+  match_data = line.match(options[:pattern])
+  if match_data
+    last_match = grouped_data[match_data[0]]
+    last_match << line
+  elsif options[:multiline]
+    separator_match_data = line.match(options[:terminus_pattern])
+    if separator_match_data
+      # consume line
+    elsif last_match
+      last_match.last << line
+    end
+  end
+end
+
+if options[:summary]
+  puts "In summary there were #{grouped_data.keys.length} groups found:"
+  puts
+  grouped_data.sort_by { |k,v| v.length }.each do |k, lines|
+    puts "- #{k} has #{lines.length} match#{lines.length == 1 ? '' : 'es'}"
+  end
+  puts
+else
+  grouped_data.sort_by { |k,v| v.length }.each do |k, lines|
+    puts
+    puts "============= #{k} has #{lines.length} matches ============="
+    puts lines
+  end
+end
