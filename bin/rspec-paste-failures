@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+SCRIPT_NAME = File.basename(__FILE__)
+
+options = {}
+OptionParser.new do |opts|
+  opts.on("-h", "--help") do
+    puts <<~HELP
+      #{SCRIPT_NAME} turns rspec failure output into a runnable rspec command.
+
+      When there are test failures RSpec often prints out lines that look
+      like the below at the end of its output:
+
+        4992 examples, 3 failures
+
+        Failed examples:
+
+        rspec ./spec/bar_spec.rb:23 # failed for a reason
+        rspec ./spec/baz_spec.rb:32 # failed for another reason
+        rspec ./spec/foo_spec.rb:78 # failed for a third reason
+
+      The #{SCRIPT_NAME} command will let you copy and paste the RSpec output
+      and turn it into a runnable command that looks like this:
+
+        rspec ./spec/bar_spec.rb:23 ./spec/baz_spec.rb:32 ./spec/foo_spec.rb:78
+
+    HELP
+    puts opts
+    exit
+  end
+end.parse!
+
+puts "Please paste in the failed RSpec output. Hit Ctrl-c when done to get the runnable RSpec command:"
+puts
+lines = []
+
+def bold(str)
+  "\e[1m#{str}\e[0m"
+end
+
+trap('INT') do
+  cli_args = lines.join.scan(/rspec (.*?) #/).flatten.join(' ')
+  puts lines.join.inspect
+  puts
+  puts <<~STR
+    #{bold('Runnable command:')}
+
+    #{bold('rspec')} #{bold(cli_args)}
+  STR
+  exit
+end
+
+loop do
+  lines << gets
+end
