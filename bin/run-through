@@ -4,19 +4,50 @@ require 'optparse'
 
 SCRIPT_NAME = File.basename(__FILE__)
 
+def yellow(str)
+  "\e[33m#{str}\e[0m"
+end
+
+# Taken from with_env gem:
+# https://github.com/mhs/with_env-rb/blob/master/lib/with_env.rb
+module WithEnv
+  extend self
+
+  def with_env(env, &blk)
+    before = ENV.to_h.dup
+    env.each { |k, v| ENV[k] = v }
+    yield
+  ensure
+    ENV.replace(before)
+  end
+
+  def without_env(*keys, &blk)
+    before = ENV.to_h.dup
+    keys.flatten.each { |k| ENV.delete(k) }
+    yield
+  ensure
+    ENV.replace(before)
+  end
+end
+
 module RunThroughCLI
   class ShellCommand
     def initialize(command)
       @command = command
     end
 
-    def run(dry_run:, files:, verbose:)
+    def run(dry_run:, env:, files:, verbose:)
       cmd = "#{@command} #{files.join(' ')}"
       if dry_run
-        puts "Would run: #{cmd}"
+        pretty_env = env.to_a.map { |arr| arr.join('=') }.join(' ')
+        puts <<~STR
+          #{yellow('Would run:')} #{pretty_env} #{cmd}
+        STR
         true
       else
-        system(cmd)
+        WithEnv.with_env(env) do
+          system(cmd)
+        end
       end
     end
   end
@@ -33,6 +64,7 @@ options = {
   dry_run: false,
   individual: false,
   verbose: false,
+  env: {}
 }
 
 OptionParser.new do |opts|
@@ -44,6 +76,11 @@ OptionParser.new do |opts|
   command_description = "A command to execute on arguments. Can be passed multiple times"
   opts.on("-c", "--command=COMMAND", command_description) do |command|
     options[:commands] << RunThroughCLI::ShellCommand.new(command)
+  end
+
+  opts.on("-e", "--env-var=ENVVAR", "Sets an env var, e.g. VAR=VAL") do |arg|
+    var, val = arg.split("=", 2)
+    options.fetch(:env)[var] = val
   end
 
   opts.on("-i", "--individual", "Run each command once per file rather than once per all files") do
@@ -90,7 +127,8 @@ file_groups.each do |files|
     success = command.run(
       dry_run: options[:dry_run],
       files: files,
-      verbose: options[:verbose]
+      verbose: options[:verbose],
+      env: options.fetch(:env)
     ) && success
   end
 end
