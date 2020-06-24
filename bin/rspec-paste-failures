@@ -2,6 +2,18 @@
 
 require 'optparse'
 
+begin
+  gem 'term-ansicolor', '>=1.0.5'
+  require 'term/ansicolor'
+rescue Exception => ex
+  puts <<~MESSAGE
+    This script requires term-ansicolor >= 1.0.5. Please install
+    it and re-run the command.
+
+        gem install -r term-ansicolor
+  MESSAGE
+end
+
 SCRIPT_NAME = File.basename(__FILE__)
 
 options = {}
