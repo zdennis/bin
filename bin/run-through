@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'optparse'
+require 'timeout'
 
 SCRIPT_NAME = File.basename(__FILE__)
 
@@ -83,7 +84,11 @@ def group_files(files, individual:)
   end
 end
 
-file_groups = group_files(ARGV.dup, individual: options[:individual])
+
+files = Timeout.timeout(0.1) { STDIN.read.split("\n") } rescue nil
+files ||= ARGV.dup
+
+file_groups = group_files(files, individual: options[:individual])
 success = true
 file_groups.each do |files|
   options[:commands].each do |command|
