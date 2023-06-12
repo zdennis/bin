@@ -85,10 +85,11 @@ def group_files(files, individual:)
 end
 
 
-files = Timeout.timeout(0.1) { STDIN.read.split("\n") } rescue nil
+files = Timeout.timeout(0.5) { STDIN.read.split("\n") } rescue nil
 files ||= ARGV.dup
 
 file_groups = group_files(files, individual: options[:individual])
+
 success = true
 file_groups.each do |files|
   options[:commands].each do |command|
