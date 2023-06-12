@@ -53,13 +53,18 @@ def bold(str)
 end
 
 trap('INT') do
-  cli_args = lines.join.scan(/rspec (.*?) #/).flatten.join(' ')
+  cli_args = lines.join.scan(/rspec (.*?) #/).flatten.sort.uniq.join(' ')
+  cli_args_files_only = lines.join.scan(/rspec (.*?):/).flatten.sort.uniq.join(' ')
   puts lines.join.inspect
   puts
   puts <<~STR
-    #{bold('Runnable command:')}
+    #{bold('Runnable command with line numbers:')}
 
     #{bold('rspec')} #{bold(cli_args)}
+
+    #{bold('Runnable command by file:')}
+
+    #{bold('rspec')} #{bold(cli_args_files_only)}
   STR
   exit
 end
