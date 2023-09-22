@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+
+require "fileutils"
+
+log_directory = File.join(ENV["HOME"], ".brew-upgrades")
+FileUtils.mkdir_p log_directory
+
+timestamp = %x{echo $(date -j '+%Y-%m-%d_%Hh%Mm%Ss')}.chomp
+log_file = File.join(log_directory, "#{timestamp}.log")
+upgrade_command = "brew update && brew upgrade | tee -a '#{log_file}'"
+
+puts "Upgrading brew with command: #{upgrade_command}"
+exec upgrade_command
