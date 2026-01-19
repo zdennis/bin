@@ -85,8 +85,23 @@ def group_files(files, individual:)
 end
 
 
-files = Timeout.timeout(0.5) { STDIN.read.split("\n") } rescue nil
-files ||= ARGV.dup
+files = if STDIN.tty?
+  ARGV.dup
+else
+  input = ""
+  begin
+    while chunk = STDIN.read_nonblock(1024)
+      input << chunk
+    end
+  rescue IO::WaitReadable
+    # No more data available right now
+    sleep 0.01
+    retry
+  rescue EOFError
+    # End of input
+  end
+  input.split("\n")
+end
 
 file_groups = group_files(files, individual: options[:individual])
 
