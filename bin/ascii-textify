@@ -11,6 +11,7 @@
 #   ascii-textify --color red "Error"
 #   ascii-textify --rainbow "Success"
 #   ascii-textify --center --width 80 "Centered"
+#   ascii-textify --watch --center "Hello"     # Re-renders on terminal resize
 #   ascii-textify --list-colors
 #
 
@@ -859,7 +860,8 @@ class AsciiTextify
       align: :left,
       color: nil,
       rainbow: false,
-      list_colors: false
+      list_colors: false,
+      watch: false
     }
   end
 
@@ -877,14 +879,46 @@ class AsciiTextify
       exit 1
     end
 
-    output = render_text(@text)
-    puts output
+    if @options[:watch]
+      watch_loop
+    else
+      output = render_text(@text)
+      puts output
+    end
   end
 
   private
 
   def terminal_width
     IO.console&.winsize&.last || 80
+  end
+
+  def watch_loop
+    @needs_redraw = true
+
+    Signal.trap("WINCH") do
+      @needs_redraw = true
+    end
+
+    Signal.trap("INT") do
+      clear_screen
+      exit 0
+    end
+
+    loop do
+      if @needs_redraw
+        @needs_redraw = false
+        @options[:width] = terminal_width
+        clear_screen
+        output = render_text(@text)
+        puts output
+      end
+      sleep 0.1
+    end
+  end
+
+  def clear_screen
+    print "\e[2J\e[H"
   end
 
   def parse_options!
@@ -897,7 +931,7 @@ class AsciiTextify
         @options[:width] = w
       end
 
-      opts.on("-h", "--height HEIGHT", Integer, "Maximum height (scales font if needed)") do |h|
+      opts.on("--height HEIGHT", Integer, "Maximum height (scales font if needed)") do |h|
         @options[:height] = h
       end
 
@@ -925,12 +959,16 @@ class AsciiTextify
         @options[:list_colors] = true
       end
 
+      opts.on("-W", "--watch", "Stay running and re-render on terminal resize") do
+        @options[:watch] = true
+      end
+
       opts.on("-v", "--version", "Show version") do
         puts "ascii-textify #{VERSION}"
         exit 0
       end
 
-      opts.on("--help", "Show this help") do
+      opts.on("-h", "--help", "Show this help") do
         puts opts
         exit 0
       end
