@@ -10,6 +10,7 @@
 #   ascii-textify "Hello"
 #   ascii-textify --color red "Error"
 #   ascii-textify --rainbow "Success"
+#   ascii-textify --rainbow --color cyan "Tinted"  # Tinted rainbow
 #   ascii-textify --center --width 80 "Centered"
 #   ascii-textify --watch --center "Hello"     # Re-renders on terminal resize
 #   ascii-textify --list-colors
@@ -1052,7 +1053,7 @@ class AsciiTextify
 
     # Apply color
     if @options[:rainbow]
-      rows = apply_rainbow(rows)
+      rows = apply_rainbow(rows, @options[:color])
     elsif @options[:color]
       rows = apply_color(rows, @options[:color])
     end
@@ -1106,7 +1107,14 @@ class AsciiTextify
     rows.map { |row| colorize_text(row, code) }
   end
 
-  def apply_rainbow(rows)
+  def apply_rainbow(rows, tint_color_name = nil)
+    tint_code = tint_color_name ? COLORS_256[tint_color_name] : nil
+
+    if tint_code && !COLORS_256[tint_color_name]
+      warn "Warning: Unknown color '#{tint_color_name}'. Using untinted rainbow."
+      tint_code = nil
+    end
+
     # Apply rainbow colors column by column
     rows.map do |row|
       colored_chars = row.chars.map.with_index do |char, i|
@@ -1114,7 +1122,9 @@ class AsciiTextify
           char
         else
           color_index = i % RAINBOW_COLORS.length
-          colorize_text(char, RAINBOW_COLORS[color_index])
+          rainbow_code = RAINBOW_COLORS[color_index]
+          final_code = tint_code ? blend_colors(rainbow_code, tint_code, 0.4) : rainbow_code
+          colorize_text(char, final_code)
         end
       end
       colored_chars.join
@@ -1123,6 +1133,45 @@ class AsciiTextify
 
   def colorize_text(text, color_code)
     "\e[38;5;#{color_code}m#{text}\e[0m"
+  end
+
+  # Convert 256 color code to RGB
+  def color_code_to_rgb(code)
+    if code < 16
+      # Standard colors
+      [
+        [0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0],
+        [0, 0, 128], [128, 0, 128], [0, 128, 128], [192, 192, 192],
+        [128, 128, 128], [255, 0, 0], [0, 255, 0], [255, 255, 0],
+        [0, 0, 255], [255, 0, 255], [0, 255, 255], [255, 255, 255]
+      ][code]
+    elsif code < 232
+      # 6x6x6 color cube
+      code -= 16
+      levels = [0, 95, 135, 175, 215, 255]
+      [levels[code / 36], levels[(code % 36) / 6], levels[code % 6]]
+    else
+      # Grayscale
+      gray = 8 + (code - 232) * 10
+      [gray, gray, gray]
+    end
+  end
+
+  # Convert RGB to nearest 256 color code
+  def rgb_to_color_code(r, g, b)
+    levels = [0, 95, 135, 175, 215, 255]
+    r_idx = levels.each_with_index.min_by { |l, _| (l - r).abs }[1]
+    g_idx = levels.each_with_index.min_by { |l, _| (l - g).abs }[1]
+    b_idx = levels.each_with_index.min_by { |l, _| (l - b).abs }[1]
+    16 + (r_idx * 36) + (g_idx * 6) + b_idx
+  end
+
+  # Blend two colors together (factor 0.0 = all color1, 1.0 = all color2)
+  def blend_colors(color1_code, color2_code, factor = 0.5)
+    rgb1 = color_code_to_rgb(color1_code)
+    rgb2 = color_code_to_rgb(color2_code)
+    blended = rgb1.zip(rgb2).map { |c1, c2| (c1 * (1 - factor) + c2 * factor).round }
+    rgb_to_color_code(*blended)
   end
 end
 
