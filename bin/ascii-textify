@@ -11,6 +11,8 @@
 #   ascii-textify --color red "Error"
 #   ascii-textify --rainbow "Success"
 #   ascii-textify --rainbow --color cyan "Tinted"  # Tinted rainbow
+#   ascii-textify --random "Surprise"              # Random color
+#   ascii-textify --random --rainbow "Random Tint" # Rainbow with random tint
 #   ascii-textify --center --width 80 "Centered"
 #   ascii-textify --watch --center "Hello"     # Re-renders on terminal resize
 #   ascii-textify --list-colors
@@ -861,6 +863,7 @@ class AsciiTextify
       align: :left,
       color: nil,
       rainbow: false,
+      random_color: false,
       list_colors: false,
       watch: false
     }
@@ -956,6 +959,10 @@ class AsciiTextify
         @options[:rainbow] = true
       end
 
+      opts.on("--random", "Pick a random color (works with --rainbow for tinting)") do
+        @options[:random_color] = true
+      end
+
       opts.on("--list-colors", "List all available color names") do
         @options[:list_colors] = true
       end
@@ -1027,6 +1034,11 @@ class AsciiTextify
   end
 
   def render_text(text)
+    # Pick a random color if requested
+    if @options[:random_color]
+      @options[:color] = COLORS_256.keys.sample
+    end
+
     # Convert to uppercase for the font
     text = text.upcase
 
