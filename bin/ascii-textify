@@ -905,20 +905,39 @@ class AsciiTextify
     end
 
     Signal.trap("INT") do
-      clear_screen
+      reset_terminal
       exit 0
     end
 
-    loop do
-      if @needs_redraw
-        @needs_redraw = false
-        @options[:width] = terminal_width
-        clear_screen
-        output = render_text(@text)
-        puts output
+    print "\e[?25l" # Hide cursor
+    IO.console.raw do
+      loop do
+        if @needs_redraw
+          @needs_redraw = false
+          @options[:width] = terminal_width
+          clear_screen
+          output = render_text(@text)
+          puts output
+          print "\e[#{FONT_HEIGHT + 2};1H\e[2mPress any key to refresh, 'q' to quit\e[0m"
+        end
+
+        # Check for keypress with timeout
+        if IO.select([STDIN], nil, nil, 0.1)
+          key = STDIN.read_nonblock(1) rescue nil
+          if key == "q" || key == "\x03" # q or Ctrl-C
+            reset_terminal
+            exit 0
+          elsif key
+            @needs_redraw = true
+          end
+        end
       end
-      sleep 0.1
     end
+  end
+
+  def reset_terminal
+    clear_screen
+    print "\e[?25h" # Show cursor
   end
 
   def clear_screen
@@ -967,7 +986,7 @@ class AsciiTextify
         @options[:list_colors] = true
       end
 
-      opts.on("-W", "--watch", "Stay running and re-render on terminal resize") do
+      opts.on("-W", "--watch", "Stay running, re-render on resize or keypress") do
         @options[:watch] = true
       end
 
