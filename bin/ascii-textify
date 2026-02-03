@@ -900,6 +900,12 @@ class AsciiTextify
   def watch_loop
     @needs_redraw = true
 
+    console = IO.console
+    unless console
+      warn "Error: Watch mode requires a terminal"
+      exit 1
+    end
+
     Signal.trap("WINCH") do
       @needs_redraw = true
     end
@@ -910,14 +916,15 @@ class AsciiTextify
     end
 
     print "\e[?25l" # Hide cursor
-    IO.console.raw do
+    console.raw do
       loop do
         if @needs_redraw
           @needs_redraw = false
           @options[:width] = terminal_width
           clear_screen
           output = render_text(@text)
-          puts output
+          # In raw mode, \n doesn't include carriage return
+          print output.gsub("\n", "\r\n") + "\r\n"
           print "\e[#{FONT_HEIGHT + 2};1H\e[2mPress any key to refresh, 'q' to quit\e[0m"
         end
 
