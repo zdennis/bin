@@ -1055,8 +1055,10 @@ class AsciiBanner
           @options[:width] = terminal_width
           clear_screen
           print render_text(@text).gsub("\n", "\r\n")
-          footer = mode == :rotate ? "Size: #{@options[:size]} | 'q' to quit" : "Press any key to refresh, 'q' to quit"
-          print "\r\n\e[2m#{footer}\e[0m"
+          unless @options[:minimal]
+            footer = mode == :rotate ? "Size: #{@options[:size]} | 'q' to quit" : "Press any key to refresh, 'q' to quit"
+            print "\r\n\e[2m#{footer}\e[0m"
+          end
         end
 
         # Check for input (rotate waits 1.5s total, watch waits indefinitely)
@@ -1131,6 +1133,10 @@ class AsciiBanner
 
       opts.on("-W", "--watch", "Stay running, re-render on resize or keypress") do
         @options[:watch] = true
+      end
+
+      opts.on("--minimal", "Hide footer in interactive modes (watch/rotate)") do
+        @options[:minimal] = true
       end
 
       opts.on("-m", "--margin [MARGIN]", "Set margin: N, ROW,COL, or TOP,BOT,LEFT,RIGHT (default: 0)") do |m|
