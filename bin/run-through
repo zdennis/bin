@@ -3,7 +3,7 @@
 require 'optparse'
 require 'shellwords'
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 SCRIPT_NAME = File.basename(__FILE__)
 
 module RunThroughCLI
