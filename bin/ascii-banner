@@ -24,6 +24,7 @@
 #   ascii-banner --size large "Hello"         # Large (2x) font
 #   ascii-banner --size tiny "Hello"          # Tiny (0.5x) font
 #   ascii-banner -s xlarge "Hello"            # Extra large (3x) font
+#   ascii-banner --size rotate "Hello"        # Rotate through sizes every 1.5s
 #
 
 require "optparse"
@@ -968,6 +969,9 @@ class AsciiBanner
     "xlarge" => [3, 3]
   }.freeze
 
+  # Order for rotating through sizes
+  ROTATION_SIZES = %w[tiny small medium large xlarge].freeze
+
   def initialize(argv)
     @argv = argv
     @options = {
@@ -998,7 +1002,9 @@ class AsciiBanner
       exit 1
     end
 
-    if @options[:watch]
+    if @options[:size] == "rotate"
+      rotate_loop
+    elsif @options[:watch]
       watch_loop
     else
       output = render_text(@text)
@@ -1058,6 +1064,47 @@ class AsciiBanner
             @needs_redraw = true
           end
         end
+      end
+    end
+  end
+
+  def rotate_loop
+    console = IO.console
+    unless console
+      warn "Error: Rotate mode requires a terminal"
+      exit 1
+    end
+
+    Signal.trap("INT") do
+      reset_terminal
+      exit 0
+    end
+
+    size_index = 0
+    print "\e[?25l" # Hide cursor
+
+    console.raw do
+      loop do
+        @options[:size] = ROTATION_SIZES[size_index]
+        @options[:width] = terminal_width
+        clear_screen
+        output = render_text(@text)
+        print output.gsub("\n", "\r\n") + "\r\n"
+        output_lines = output.count("\n") + 1
+        print "\e[#{output_lines + 2};1H\e[2mSize: #{@options[:size]} | 'q' to quit\e[0m"
+
+        # Wait 1.5 seconds, checking for quit
+        15.times do
+          if IO.select([STDIN], nil, nil, 0.1)
+            key = STDIN.read_nonblock(1) rescue nil
+            if key == "q" || key == "\x03"
+              reset_terminal
+              exit 0
+            end
+          end
+        end
+
+        size_index = (size_index + 1) % ROTATION_SIZES.length
       end
     end
   end
@@ -1125,7 +1172,7 @@ class AsciiBanner
         @options[:margin] = { top: 0, bottom: 0, left: 0, right: 0 }
       end
 
-      opts.on("-s", "--size SIZE", SIZE_SCALES.keys, "Font size: tiny, small, medium, large, xlarge (default: medium)") do |s|
+      opts.on("-s", "--size SIZE", SIZE_SCALES.keys + ["rotate"], "Font size: tiny, small, medium, large, xlarge, rotate (default: medium)") do |s|
         @options[:size] = s
       end
 
