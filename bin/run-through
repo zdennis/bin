@@ -19,6 +19,7 @@ module RunThroughCLI
         puts "Would run: #{cmd}"
         true
       else
+        puts "Running: #{cmd}" if verbose
         system(cmd)
       end
     end
@@ -55,6 +56,10 @@ OptionParser.new do |opts|
 
   opts.on("-n", "--dry-run", "Perform a dry run and print out what would happen") do
     options[:dry_run] = true
+  end
+
+  opts.on("-V", "--verbose", "Print each command before running it") do
+    options[:verbose] = true
   end
 
   opts.on("-v", "--version") do
