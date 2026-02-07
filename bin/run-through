@@ -8,6 +8,8 @@ SCRIPT_NAME = File.basename(__FILE__)
 
 module RunThroughCLI
   class ShellCommand
+    attr_reader :command
+
     def initialize(command)
       @command = command
     end
@@ -20,14 +22,18 @@ module RunThroughCLI
         true
       else
         puts "Running: #{cmd}" if verbose
-        system(cmd)
+        result = system(cmd)
+        unless result
+          $stderr.puts "#{SCRIPT_NAME}: command failed: #{@command}"
+        end
+        result
       end
     end
   end
 
   class BundleExecCommand < ShellCommand
     def initialize(command)
-      @command = "bundle exec #{command}"
+      super("bundle exec #{command}")
     end
   end
 end
