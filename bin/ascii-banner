@@ -25,6 +25,7 @@
 #   ascii-banner --size tiny "Hello"          # Tiny (0.5x) font
 #   ascii-banner -s xlarge "Hello"            # Extra large (3x) font
 #   ascii-banner --size rotate "Hello"        # Rotate through sizes every 1.5s
+#   ascii-banner --auto-scale "Hello"         # Auto-select best size for terminal
 #
 
 require "optparse"
@@ -984,7 +985,8 @@ class AsciiBanner
       list_colors: false,
       watch: false,
       margin: { top: 2, bottom: 2, left: 2, right: 2 },
-      size: "medium"
+      size: "medium",
+      auto_scale: false
     }
   end
 
@@ -1176,6 +1178,10 @@ class AsciiBanner
         @options[:size] = s
       end
 
+      opts.on("--auto-scale", "Auto-select best size to fit terminal") do
+        @options[:auto_scale] = true
+      end
+
       opts.on("-v", "--version", "Show version") do
         puts "ascii-banner #{VERSION}"
         exit 0
@@ -1267,6 +1273,11 @@ class AsciiBanner
       @options[:color] = COLORS_256.keys.sample
     end
 
+    # Auto-scale: find best size for terminal
+    if @options[:auto_scale]
+      @options[:size] = calculate_best_size(text)
+    end
+
     # Convert to uppercase for the font
     text = text.upcase
 
@@ -1324,6 +1335,54 @@ class AsciiBanner
     else
       [ASCII_FONT, FONT_HEIGHT]
     end
+  end
+
+  def calculate_best_size(text)
+    term_height = terminal_height
+    term_width = terminal_width
+
+    # Calculate margin overhead (if not centering)
+    margin_v = 0
+    margin_h = 0
+    if @options[:align] != :center && @options[:margin]
+      margin_v = @options[:margin][:top] + @options[:margin][:bottom]
+      margin_h = @options[:margin][:left] + @options[:margin][:right]
+    end
+
+    available_height = term_height - margin_v - 1  # -1 for prompt
+    available_width = term_width - margin_h
+
+    # Height for each size: tiny=3, small=4, medium=6, large=12, xlarge=18
+    size_heights = {
+      "xlarge" => 18,
+      "large"  => 12,
+      "medium" => 6,
+      "small"  => 4,
+      "tiny"   => 3
+    }
+
+    # Approximate width per character for each size
+    size_char_widths = {
+      "xlarge" => 18,  # 6 * 3
+      "large"  => 12,  # 6 * 2
+      "medium" => 6,
+      "small"  => 5,
+      "tiny"   => 4
+    }
+
+    text_len = text.length
+
+    # Find largest size that fits both height and width
+    %w[xlarge large medium small tiny].each do |size|
+      height = size_heights[size]
+      width = text_len * size_char_widths[size]
+
+      if height <= available_height && width <= available_width
+        return size
+      end
+    end
+
+    "tiny"  # Fallback to smallest
   end
 
   def text_to_ascii_art(text, font = ASCII_FONT, font_height = FONT_HEIGHT)
