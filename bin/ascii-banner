@@ -1015,12 +1015,11 @@ class AsciiBanner
     end
 
     if @options[:size] == "rotate"
-      rotate_loop
+      interactive_loop(mode: :rotate)
     elsif @options[:watch]
-      watch_loop
+      interactive_loop(mode: :watch)
     else
-      output = render_text(@text)
-      puts output
+      puts render_text(@text)
     end
   end
 
@@ -1034,89 +1033,47 @@ class AsciiBanner
     IO.console&.winsize&.first || 24
   end
 
-  def watch_loop
-    @needs_redraw = true
-
+  def interactive_loop(mode:)
     console = IO.console
     unless console
-      warn "Error: Watch mode requires a terminal"
+      warn "Error: #{mode} mode requires a terminal"
       exit 1
     end
 
-    Signal.trap("WINCH") do
-      @needs_redraw = true
-    end
+    @needs_redraw = true
+    size_index = 0
 
-    Signal.trap("INT") do
-      reset_terminal
-      exit 0
-    end
+    Signal.trap("WINCH") { @needs_redraw = true } if mode == :watch
+    Signal.trap("INT") { reset_terminal; exit 0 }
 
     print "\e[?25l" # Hide cursor
     console.raw do
       loop do
-        if @needs_redraw
+        if @needs_redraw || mode == :rotate
           @needs_redraw = false
+          @options[:size] = ROTATION_SIZES[size_index] if mode == :rotate
           @options[:width] = terminal_width
           clear_screen
-          output = render_text(@text)
-          # In raw mode, \n doesn't include carriage return
-          print output.gsub("\n", "\r\n")
-          output_lines = output.count("\n") + 1
-          print "\r\n\e[2mPress any key to refresh, 'q' to quit\e[0m"
+          print render_text(@text).gsub("\n", "\r\n")
+          footer = mode == :rotate ? "Size: #{@options[:size]} | 'q' to quit" : "Press any key to refresh, 'q' to quit"
+          print "\r\n\e[2m#{footer}\e[0m"
         end
 
-        # Check for keypress with timeout
-        if IO.select([STDIN], nil, nil, 0.1)
-          key = STDIN.read_nonblock(1) rescue nil
-          if key == "q" || key == "\x03" # q or Ctrl-C
-            reset_terminal
-            exit 0
-          elsif key
-            @needs_redraw = true
-          end
-        end
-      end
-    end
-  end
-
-  def rotate_loop
-    console = IO.console
-    unless console
-      warn "Error: Rotate mode requires a terminal"
-      exit 1
-    end
-
-    Signal.trap("INT") do
-      reset_terminal
-      exit 0
-    end
-
-    size_index = 0
-    print "\e[?25l" # Hide cursor
-
-    console.raw do
-      loop do
-        @options[:size] = ROTATION_SIZES[size_index]
-        @options[:width] = terminal_width
-        clear_screen
-        output = render_text(@text)
-        print output.gsub("\n", "\r\n")
-        output_lines = output.count("\n") + 1
-        print "\r\n\e[2mSize: #{@options[:size]} | 'q' to quit\e[0m"
-
-        # Wait 1.5 seconds, checking for quit
-        15.times do
+        # Check for input (rotate waits 1.5s total, watch waits indefinitely)
+        wait_cycles = mode == :rotate ? 15 : 1
+        wait_cycles.times do
           if IO.select([STDIN], nil, nil, 0.1)
             key = STDIN.read_nonblock(1) rescue nil
             if key == "q" || key == "\x03"
               reset_terminal
               exit 0
+            elsif mode == :watch
+              @needs_redraw = true
             end
           end
         end
 
-        size_index = (size_index + 1) % ROTATION_SIZES.length
+        size_index = (size_index + 1) % ROTATION_SIZES.length if mode == :rotate
       end
     end
   end
@@ -1178,10 +1135,6 @@ class AsciiBanner
 
       opts.on("-m", "--margin [MARGIN]", "Set margin: N, ROW,COL, or TOP,BOT,LEFT,RIGHT (default: 0)") do |m|
         @options[:margin] = parse_margin(m)
-      end
-
-      opts.on("--no-margin", "Disable margin (same as --margin=0)") do
-        @options[:margin] = { top: 0, bottom: 0, left: 0, right: 0 }
       end
 
       opts.on("-s", "--size SIZE", "Font size: t|tiny, s|small, m|medium, l|large, xl|xlarge, r|rotate") do |s|
@@ -1266,10 +1219,7 @@ class AsciiBanner
   end
 
   def print_color_group(colors, columns: 3)
-    sorted = colors.sort_by { |_, v| v }
-    col_width = 25
-
-    sorted.each_slice(columns) do |row|
+    colors.sort_by { |_, v| v }.each_slice(columns) do |row|
       line = row.map do |name, code|
         colored = colorize_text("██", code)
         "#{colored} #{name.ljust(20)}(#{code.to_s.rjust(3)})"
