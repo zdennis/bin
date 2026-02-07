@@ -21,6 +21,9 @@
 #   ascii-banner --margin=4 "Hello"           # 4 row/column margin
 #   ascii-banner --margin 4,3 "Hello"         # 4 row, 3 column margin
 #   ascii-banner --margin 4,2,1,3 "Hello"     # top, bottom, left, right margin
+#   ascii-banner --size large "Hello"         # Large (2x) font
+#   ascii-banner --size tiny "Hello"          # Tiny (0.5x) font
+#   ascii-banner -s xlarge "Hello"            # Extra large (3x) font
 #
 
 require "optparse"
@@ -585,7 +588,103 @@ class AsciiBanner
     ]
   }.freeze
 
+  # Tiny font (3 rows tall) - designed for legibility at small size
+  TINY_FONT = {
+    "A" => ["█▀█", "█▀█", "▀ ▀"],
+    "B" => ["█▀▄", "█▀▄", "▀▀ "],
+    "C" => ["█▀▀", "█  ", "▀▀▀"],
+    "D" => ["█▀▄", "█ █", "▀▀ "],
+    "E" => ["█▀▀", "█▀ ", "▀▀▀"],
+    "F" => ["█▀▀", "█▀ ", "▀  "],
+    "G" => ["█▀▀", "█ █", "▀▀▀"],
+    "H" => ["█ █", "█▀█", "▀ ▀"],
+    "I" => ["▀█▀", " █ ", "▀█▀"],
+    "J" => ["  █", "  █", "▀▀ "],
+    "K" => ["█ █", "█▀▄", "▀ ▀"],
+    "L" => ["█  ", "█  ", "▀▀▀"],
+    "M" => ["█▄█", "█ █", "▀ ▀"],
+    "N" => ["█▀█", "█ █", "▀ ▀"],
+    "O" => ["█▀█", "█ █", "▀▀▀"],
+    "P" => ["█▀█", "█▀ ", "▀  "],
+    "Q" => ["█▀█", "█ █", "▀▀█"],
+    "R" => ["█▀█", "█▀▄", "▀ ▀"],
+    "S" => ["█▀▀", "▀▀█", "▀▀▀"],
+    "T" => ["▀█▀", " █ ", " ▀ "],
+    "U" => ["█ █", "█ █", "▀▀▀"],
+    "V" => ["█ █", "█ █", " ▀ "],
+    "W" => ["█ █", "█ █", "█▀█"],
+    "X" => ["█ █", " █ ", "█ █"],
+    "Y" => ["█ █", " █ ", " ▀ "],
+    "Z" => ["▀▀█", " █ ", "█▀▀"],
+    "0" => ["█▀█", "█ █", "▀▀▀"],
+    "1" => ["▀█ ", " █ ", "▀█▀"],
+    "2" => ["▀▀█", "█▀▀", "▀▀▀"],
+    "3" => ["▀▀█", " ▀█", "▀▀▀"],
+    "4" => ["█ █", "▀▀█", "  ▀"],
+    "5" => ["█▀▀", "▀▀█", "▀▀▀"],
+    "6" => ["█▀▀", "█▀█", "▀▀▀"],
+    "7" => ["▀▀█", "  █", "  ▀"],
+    "8" => ["█▀█", "█▀█", "▀▀▀"],
+    "9" => ["█▀█", "▀▀█", "▀▀▀"],
+    "-" => ["   ", "▀▀▀", "   "],
+    "_" => ["   ", "   ", "▀▀▀"],
+    "." => ["   ", "   ", " ▀ "],
+    "," => ["   ", "   ", " █ "],
+    "!" => [" █ ", " █ ", " ▀ "],
+    "?" => ["▀▀█", " ▀ ", " ▀ "],
+    " " => ["  ", "  ", "  "]
+  }.freeze
+
+  # Small font (4 rows tall) - designed for legibility
+  SMALL_FONT = {
+    "A" => [" ██ ", "█  █", "████", "█  █"],
+    "B" => ["███ ", "█  █", "███ ", "███ "],
+    "C" => [" ███", "█   ", "█   ", " ███"],
+    "D" => ["███ ", "█  █", "█  █", "███ "],
+    "E" => ["████", "██  ", "█   ", "████"],
+    "F" => ["████", "██  ", "█   ", "█   "],
+    "G" => [" ███", "█   ", "█ ██", " ███"],
+    "H" => ["█  █", "████", "█  █", "█  █"],
+    "I" => ["████", " ██ ", " ██ ", "████"],
+    "J" => ["████", "  █ ", "  █ ", "██  "],
+    "K" => ["█  █", "██  ", "█ █ ", "█  █"],
+    "L" => ["█   ", "█   ", "█   ", "████"],
+    "M" => ["█  █", "████", "█  █", "█  █"],
+    "N" => ["█  █", "██ █", "█ ██", "█  █"],
+    "O" => [" ██ ", "█  █", "█  █", " ██ "],
+    "P" => ["███ ", "█  █", "███ ", "█   "],
+    "Q" => [" ██ ", "█  █", "█ █ ", " ███"],
+    "R" => ["███ ", "█  █", "███ ", "█  █"],
+    "S" => [" ███", "██  ", "  ██", "███ "],
+    "T" => ["████", " ██ ", " ██ ", " ██ "],
+    "U" => ["█  █", "█  █", "█  █", " ██ "],
+    "V" => ["█  █", "█  █", " ██ ", " ██ "],
+    "W" => ["█  █", "█  █", "████", "█  █"],
+    "X" => ["█  █", " ██ ", " ██ ", "█  █"],
+    "Y" => ["█  █", " ██ ", " ██ ", " ██ "],
+    "Z" => ["████", "  █ ", " █  ", "████"],
+    "0" => [" ██ ", "█ ██", "██ █", " ██ "],
+    "1" => [" █  ", "██  ", " █  ", "████"],
+    "2" => [" ██ ", "  █ ", " █  ", "████"],
+    "3" => ["███ ", " ██ ", "  ██", "███ "],
+    "4" => ["█  █", "████", "   █", "   █"],
+    "5" => ["████", "██  ", "  ██", "██  "],
+    "6" => [" ██ ", "█   ", "███ ", " ██ "],
+    "7" => ["████", "  █ ", " █  ", "█   "],
+    "8" => [" ██ ", "████", "█  █", " ██ "],
+    "9" => [" ██ ", "████", "  █ ", " █  "],
+    "-" => ["    ", "████", "    ", "    "],
+    "_" => ["    ", "    ", "    ", "████"],
+    "." => ["    ", "    ", "    ", " ██ "],
+    "," => ["    ", "    ", " ██ ", " █  "],
+    "!" => [" ██ ", " ██ ", "    ", " ██ "],
+    "?" => [" ██ ", "  █ ", "    ", " █  "],
+    " " => ["   ", "   ", "   ", "   "]
+  }.freeze
+
   FONT_HEIGHT = 6
+  TINY_FONT_HEIGHT = 3
+  SMALL_FONT_HEIGHT = 4
 
   # 256 color palette with human-readable names
   # Standard 16 colors (0-15)
@@ -860,6 +959,15 @@ class AsciiBanner
   # Rainbow colors in order
   RAINBOW_COLORS = [196, 202, 208, 214, 220, 226, 190, 154, 118, 82, 46, 47, 48, 49, 50, 51, 45, 39, 33, 27, 21, 57, 93, 129, 165, 201].freeze
 
+  # Size presets: name => [vertical_scale, horizontal_scale]
+  SIZE_SCALES = {
+    "tiny"   => [0.5, 0.5],
+    "small"  => [0.67, 0.67],
+    "medium" => [1, 1],
+    "large"  => [2, 2],
+    "xlarge" => [3, 3]
+  }.freeze
+
   def initialize(argv)
     @argv = argv
     @options = {
@@ -871,7 +979,8 @@ class AsciiBanner
       random_color: false,
       list_colors: false,
       watch: false,
-      margin: { top: 2, bottom: 2, left: 2, right: 2 }
+      margin: { top: 2, bottom: 2, left: 2, right: 2 },
+      size: "medium"
     }
   end
 
@@ -1016,6 +1125,10 @@ class AsciiBanner
         @options[:margin] = { top: 0, bottom: 0, left: 0, right: 0 }
       end
 
+      opts.on("-s", "--size SIZE", SIZE_SCALES.keys, "Font size: tiny, small, medium, large, xlarge (default: medium)") do |s|
+        @options[:size] = s
+      end
+
       opts.on("-v", "--version", "Show version") do
         puts "ascii-banner #{VERSION}"
         exit 0
@@ -1110,8 +1223,11 @@ class AsciiBanner
     # Convert to uppercase for the font
     text = text.upcase
 
+    # Select font based on size
+    font, font_height = select_font
+
     # Generate ASCII art rows
-    rows = text_to_ascii_art(text)
+    rows = text_to_ascii_art(text, font, font_height)
     art_width = rows.first&.length || 0
 
     # Truncate if wider than max width
@@ -1119,13 +1235,18 @@ class AsciiBanner
       avg_char_width = 6
       max_chars = (@options[:width] / avg_char_width) - 1
       text = text[0...max_chars]
-      rows = text_to_ascii_art(text)
+      rows = text_to_ascii_art(text, font, font_height)
       art_width = rows.first&.length || 0
     end
 
     # Apply height scaling if specified and needed
-    if @options[:height] && @options[:height] < FONT_HEIGHT
+    if @options[:height] && @options[:height] < font_height
       rows = scale_height(rows, @options[:height])
+    end
+
+    # Apply size scaling (only for large/xlarge which scale up)
+    if @options[:size] == "large" || @options[:size] == "xlarge"
+      rows = scale_size(rows)
     end
 
     # Apply alignment
@@ -1146,11 +1267,22 @@ class AsciiBanner
     rows.join("\n")
   end
 
-  def text_to_ascii_art(text)
-    rows = Array.new(FONT_HEIGHT) { +"" }
+  def select_font
+    case @options[:size]
+    when "tiny"
+      [TINY_FONT, TINY_FONT_HEIGHT]
+    when "small"
+      [SMALL_FONT, SMALL_FONT_HEIGHT]
+    else
+      [ASCII_FONT, FONT_HEIGHT]
+    end
+  end
+
+  def text_to_ascii_art(text, font = ASCII_FONT, font_height = FONT_HEIGHT)
+    rows = Array.new(font_height) { +"" }
 
     text.each_char do |char|
-      pattern = ASCII_FONT[char] || ASCII_FONT[" "]
+      pattern = font[char] || font[" "]
       pattern.each_with_index do |row, i|
         rows[i] << row << " "
       end
@@ -1165,6 +1297,25 @@ class AsciiBanner
     # Simple scaling: pick evenly spaced rows
     step = rows.length.to_f / target_height
     (0...target_height).map { |i| rows[(i * step).floor] }
+  end
+
+  def scale_size(rows)
+    # Only used for scaling UP (large/xlarge)
+    v_scale, h_scale = SIZE_SCALES[@options[:size]]
+
+    # Scale horizontally: duplicate each character
+    if h_scale > 1
+      rows = rows.map do |row|
+        row.chars.map { |c| c * h_scale.to_i }.join
+      end
+    end
+
+    # Scale vertically: duplicate each row
+    if v_scale > 1
+      rows = rows.flat_map { |row| [row] * v_scale.to_i }
+    end
+
+    rows
   end
 
   def align_rows(rows, art_width)
