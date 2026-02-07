@@ -94,19 +94,7 @@ end
 files = if STDIN.tty?
   ARGV.dup
 else
-  input = ""
-  begin
-    while chunk = STDIN.read_nonblock(1024)
-      input << chunk
-    end
-  rescue IO::WaitReadable
-    # No more data available right now
-    sleep 0.01
-    retry
-  rescue EOFError
-    # End of input
-  end
-  input.split("\n")
+  STDIN.read.split("\n")
 end
 
 file_groups = group_files(files, individual: options[:individual])
