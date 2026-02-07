@@ -25,7 +25,8 @@
 #   ascii-banner -s t "Hello"                 # Tiny font
 #   ascii-banner -s xl "Hello"                # Extra large (3x) font
 #   ascii-banner -s r "Hello"                 # Rotate through sizes every 1.5s
-#   ascii-banner --auto-scale "Hello"         # Auto-select best size for terminal
+#   ascii-banner "Hello"                       # Auto-scales to fit terminal (default)
+#   ascii-banner --no-auto-scale "Hello"      # Use medium size, no auto-scaling
 #
 
 require "optparse"
@@ -996,7 +997,7 @@ class AsciiBanner
       watch: false,
       margin: { top: 2, bottom: 2, left: 2, right: 2 },
       size: "medium",
-      auto_scale: false
+      auto_scale: true
     }
   end
 
@@ -1186,10 +1187,11 @@ class AsciiBanner
 
       opts.on("-s", "--size SIZE", "Font size: t|tiny, s|small, m|medium, l|large, xl|xlarge, r|rotate") do |s|
         @options[:size] = SIZE_ALIASES[s] || s
+        @options[:auto_scale] = false  # Explicit size disables auto-scale
       end
 
-      opts.on("--auto-scale", "Auto-select best size to fit terminal") do
-        @options[:auto_scale] = true
+      opts.on("--no-auto-scale", "Disable auto-scaling (use with -s to force size)") do
+        @options[:auto_scale] = false
       end
 
       opts.on("-v", "--version", "Show version") do
