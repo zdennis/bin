@@ -97,10 +97,20 @@ def group_files(files, individual:)
 end
 
 
+if options[:commands].empty?
+  $stderr.puts "#{SCRIPT_NAME}: no commands specified. Use -c or -b to specify commands."
+  exit 1
+end
+
 files = if STDIN.tty?
   ARGV.dup
 else
   STDIN.read.split("\n")
+end
+
+if files.empty?
+  $stderr.puts "#{SCRIPT_NAME}: no files provided. Pass files as arguments or via stdin."
+  exit 1
 end
 
 file_groups = group_files(files, individual: options[:individual])
