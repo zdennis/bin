@@ -1061,9 +1061,9 @@ class AsciiBanner
           clear_screen
           output = render_text(@text)
           # In raw mode, \n doesn't include carriage return
-          print output.gsub("\n", "\r\n") + "\r\n"
+          print output.gsub("\n", "\r\n")
           output_lines = output.count("\n") + 1
-          print "\e[#{output_lines + 1};1H\e[2mPress any key to refresh, 'q' to quit\e[0m"
+          print "\r\n\e[2mPress any key to refresh, 'q' to quit\e[0m"
         end
 
         # Check for keypress with timeout
@@ -1101,9 +1101,9 @@ class AsciiBanner
         @options[:width] = terminal_width
         clear_screen
         output = render_text(@text)
-        print output.gsub("\n", "\r\n") + "\r\n"
+        print output.gsub("\n", "\r\n")
         output_lines = output.count("\n") + 1
-        print "\e[#{output_lines + 1};1H\e[2mSize: #{@options[:size]} | 'q' to quit\e[0m"
+        print "\r\n\e[2mSize: #{@options[:size]} | 'q' to quit\e[0m"
 
         # Wait 1.5 seconds, checking for quit
         15.times do
