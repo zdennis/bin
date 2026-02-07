@@ -21,10 +21,10 @@
 #   ascii-banner --margin=4 "Hello"           # 4 row/column margin
 #   ascii-banner --margin 4,3 "Hello"         # 4 row, 3 column margin
 #   ascii-banner --margin 4,2,1,3 "Hello"     # top, bottom, left, right margin
-#   ascii-banner --size large "Hello"         # Large (2x) font
-#   ascii-banner --size tiny "Hello"          # Tiny (0.5x) font
-#   ascii-banner -s xlarge "Hello"            # Extra large (3x) font
-#   ascii-banner --size rotate "Hello"        # Rotate through sizes every 1.5s
+#   ascii-banner -s l "Hello"                 # Large (2x) font (shortcuts: t,s,m,l,xl)
+#   ascii-banner -s t "Hello"                 # Tiny font
+#   ascii-banner -s xl "Hello"                # Extra large (3x) font
+#   ascii-banner -s r "Hello"                 # Rotate through sizes every 1.5s
 #   ascii-banner --auto-scale "Hello"         # Auto-select best size for terminal
 #
 
@@ -970,6 +970,16 @@ class AsciiBanner
     "xlarge" => [3, 3]
   }.freeze
 
+  # Size shortcuts: short => full name
+  SIZE_ALIASES = {
+    "t"  => "tiny",
+    "s"  => "small",
+    "m"  => "medium",
+    "l"  => "large",
+    "xl" => "xlarge",
+    "r"  => "rotate"
+  }.freeze
+
   # Order for rotating through sizes
   ROTATION_SIZES = %w[tiny small medium large xlarge].freeze
 
@@ -1174,8 +1184,8 @@ class AsciiBanner
         @options[:margin] = { top: 0, bottom: 0, left: 0, right: 0 }
       end
 
-      opts.on("-s", "--size SIZE", SIZE_SCALES.keys + ["rotate"], "Font size: tiny, small, medium, large, xlarge, rotate (default: medium)") do |s|
-        @options[:size] = s
+      opts.on("-s", "--size SIZE", "Font size: t|tiny, s|small, m|medium, l|large, xl|xlarge, r|rotate") do |s|
+        @options[:size] = SIZE_ALIASES[s] || s
       end
 
       opts.on("--auto-scale", "Auto-select best size to fit terminal") do
