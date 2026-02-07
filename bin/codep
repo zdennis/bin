@@ -1,4 +1,12 @@
 #!/usr/bin/env sh
 
+VERSION="1.0.0"
+SCRIPT_NAME=$(basename "$0")
+
+if [ "$1" = "-v" ] || [ "$1" = "--version" ]; then
+  echo "$SCRIPT_NAME $VERSION"
+  exit 0
+fi
+
 touchp $@ &&
   code $@
