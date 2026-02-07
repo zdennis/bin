@@ -3,6 +3,7 @@
 require 'optparse'
 require 'timeout'
 
+VERSION = "1.0.0"
 SCRIPT_NAME = File.basename(__FILE__)
 
 module RunThroughCLI
@@ -53,6 +54,11 @@ OptionParser.new do |opts|
 
   opts.on("-n", "--dry-run", "Perform a dry run and print out what would happen") do
     options[:dry_run] = true
+  end
+
+  opts.on("-v", "--version") do
+    puts "#{SCRIPT_NAME} #{VERSION}"
+    exit
   end
 
   opts.on("-h", "--help") do
