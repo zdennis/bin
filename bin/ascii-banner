@@ -1352,10 +1352,10 @@ class AsciiBanner
     term_height = terminal_height
     term_width = terminal_width
 
-    # Calculate margin overhead (if not centering)
+    # Calculate margin overhead
     margin_v = 0
     margin_h = 0
-    if @options[:align] != :center && @options[:margin]
+    if @options[:margin]
       margin_v = @options[:margin][:top] + @options[:margin][:bottom]
       margin_h = @options[:margin][:left] + @options[:margin][:right]
     end
