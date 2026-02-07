@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'optparse'
-require 'timeout'
+require 'shellwords'
 
 VERSION = "1.0.0"
 SCRIPT_NAME = File.basename(__FILE__)
@@ -13,7 +13,8 @@ module RunThroughCLI
     end
 
     def run(dry_run:, files:, verbose:)
-      cmd = "#{@command} #{files.join(' ')}"
+      escaped_files = files.map { |f| Shellwords.shellescape(f) }.join(' ')
+      cmd = "#{@command} #{escaped_files}"
       if dry_run
         puts "Would run: #{cmd}"
         true
