@@ -1294,6 +1294,7 @@ class AsciiBanner
     # Apply size scaling (only for large/xlarge which scale up)
     if @options[:size] == "large" || @options[:size] == "xlarge"
       rows = scale_size(rows)
+      art_width = rows.first&.length || 0  # Recalculate after scaling
     end
 
     # Apply alignment
