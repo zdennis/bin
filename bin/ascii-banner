@@ -13,7 +13,7 @@
 #   ascii-banner --rainbow --color cyan "Tinted"  # Tinted rainbow
 #   ascii-banner --random "Surprise"              # Random color
 #   ascii-banner --random --rainbow "Random Tint" # Rainbow with random tint
-#   ascii-banner --center --width 80 "Centered"
+#   ascii-banner --center "Centered"             # Center horizontally and vertically
 #   ascii-banner --watch --center "Hello"     # Re-renders on terminal resize
 #   ascii-banner --list-colors
 #   ascii-banner "Hello"                      # Includes default 2 row/column margin
@@ -903,6 +903,10 @@ class AsciiBanner
     IO.console&.winsize&.last || 80
   end
 
+  def terminal_height
+    IO.console&.winsize&.first || 24
+  end
+
   def watch_loop
     @needs_redraw = true
 
@@ -976,7 +980,7 @@ class AsciiBanner
         @options[:align] = :left
       end
 
-      opts.on("--center", "Center-align text") do
+      opts.on("--center", "Center horizontally and vertically (disables margin)") do
         @options[:align] = :center
       end
 
@@ -1134,8 +1138,8 @@ class AsciiBanner
       rows = apply_color(rows, @options[:color])
     end
 
-    # Apply margin
-    if @options[:margin]
+    # Apply margin (skip when centering - centering uses full terminal width)
+    if @options[:margin] && @options[:align] != :center
       rows = apply_margin(rows)
     end
 
@@ -1168,8 +1172,15 @@ class AsciiBanner
 
     case @options[:align]
     when :center
-      padding = [(width - art_width) / 2, 0].max
-      rows.map { |row| (" " * padding) + row }
+      # Horizontal centering
+      h_padding = [(width - art_width) / 2, 0].max
+      rows = rows.map { |row| (" " * h_padding) + row }
+
+      # Vertical centering
+      v_padding = [(terminal_height - rows.length) / 2, 0].max
+      top_rows = Array.new(v_padding, "")
+      bottom_rows = Array.new(v_padding, "")
+      top_rows + rows + bottom_rows
     when :right
       padding = [width - art_width, 0].max
       rows.map { |row| (" " * padding) + row }
