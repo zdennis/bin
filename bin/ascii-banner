@@ -13,7 +13,7 @@
 #   ascii-banner --rainbow --color cyan "Tinted"  # Tinted rainbow
 #   ascii-banner --random "Surprise"              # Random color
 #   ascii-banner --random --rainbow "Random Tint" # Rainbow with random tint
-#   ascii-banner --center "Centered"             # Center horizontally and vertically
+#   ascii-banner --center "Centered"             # Center horizontally and vertically (respects margin)
 #   ascii-banner --watch --center "Hello"     # Re-renders on terminal resize
 #   ascii-banner --list-colors
 #   ascii-banner "Hello"                      # Includes default 2 row/column margin
@@ -1149,7 +1149,7 @@ class AsciiBanner
         @options[:align] = :left
       end
 
-      opts.on("--center", "Center horizontally and vertically (disables margin)") do
+      opts.on("--center", "Center horizontally and vertically") do
         @options[:align] = :center
       end
 
@@ -1330,8 +1330,8 @@ class AsciiBanner
       rows = apply_color(rows, @options[:color])
     end
 
-    # Apply margin (skip when centering - centering uses full terminal width)
-    if @options[:margin] && @options[:align] != :center
+    # Apply margin
+    if @options[:margin]
       rows = apply_margin(rows)
     end
 
@@ -1439,15 +1439,18 @@ class AsciiBanner
 
   def align_rows(rows, art_width)
     width = @options[:width]
+    margin = @options[:margin] || { top: 0, bottom: 0, left: 0, right: 0 }
 
     case @options[:align]
     when :center
-      # Horizontal centering
-      h_padding = [(width - art_width) / 2, 0].max
+      # Horizontal centering (account for margin)
+      available_width = width - margin[:left] - margin[:right]
+      h_padding = [(available_width - art_width) / 2, 0].max
       rows = rows.map { |row| (" " * h_padding) + row }
 
-      # Vertical centering
-      v_padding = [(terminal_height - rows.length) / 2, 0].max
+      # Vertical centering (account for margin)
+      available_height = terminal_height - margin[:top] - margin[:bottom]
+      v_padding = [(available_height - rows.length) / 2, 0].max
       top_rows = Array.new(v_padding, "")
       bottom_rows = Array.new(v_padding, "")
       top_rows + rows + bottom_rows
