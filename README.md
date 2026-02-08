@@ -1,5 +1,7 @@
 # bin
 
+[![Tests](https://github.com/zdennis/bin/actions/workflows/test.yml/badge.svg)](https://github.com/zdennis/bin/actions/workflows/test.yml)
+
 Personal bin scripts for zdennis.
 
 ## Directory Structure
