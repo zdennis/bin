@@ -14,6 +14,17 @@ if [[ "$1" == "--version" || "$1" == "-v" ]]; then
   exit 0
 fi
 
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  echo "Usage: zdennis-bin-all [options]"
+  echo ""
+  echo "Lists all zdennis/bin tools available via Homebrew."
+  echo ""
+  echo "Options:"
+  echo "  -v, --version    Show version"
+  echo "  -h, --help       Show this help"
+  exit 0
+fi
+
 echo "zdennis/bin tools v$VERSION (installed via 'brew install zdennis/bin/zdennis-bin-all'):"
 echo ""
 echo "  alias-directory (1.0.0)           - Manage directory aliases for quick navigation"
