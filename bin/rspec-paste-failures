@@ -2,22 +2,30 @@
 
 require 'optparse'
 
-begin
-  gem 'term-ansicolor', '>=1.0.5'
-  require 'term/ansicolor'
-rescue Exception => ex
-  puts <<~MESSAGE
-    This script requires term-ansicolor >= 1.0.5. Please install
-    it and re-run the command.
-
-        gem install -r term-ansicolor
-  MESSAGE
-end
-
+VERSION = "1.0.0"
 SCRIPT_NAME = File.basename(__FILE__)
 
-options = {}
+if ARGV.include?("--version") || ARGV.include?("-v")
+  puts "#{SCRIPT_NAME} #{VERSION}"
+  exit 0
+end
+
+# Only require term-ansicolor for interactive mode
+unless ARGV.include?("--stdin")
+  begin
+    gem 'term-ansicolor', '>=1.0.5'
+    require 'term/ansicolor'
+  rescue Exception => ex
+    # Continue without color support
+  end
+end
+
+options = { stdin: false }
 OptionParser.new do |opts|
+  opts.on("--stdin", "Read from stdin (non-interactive, exits on EOF)") do
+    options[:stdin] = true
+  end
+
   opts.on("-h", "--help") do
     puts <<~HELP
       #{SCRIPT_NAME} turns rspec failure output into a runnable rspec command.
@@ -38,37 +46,64 @@ OptionParser.new do |opts|
 
         rspec ./spec/bar_spec.rb:23 ./spec/baz_spec.rb:32 ./spec/foo_spec.rb:78
 
+      Options:
+        --stdin          Read from stdin and exit (non-interactive)
+        -v, --version    Show version
+        -h, --help       Show this help
+
     HELP
     puts opts
     exit
   end
 end.parse!
 
-puts "Please paste in the failed RSpec output. Hit Ctrl-c when done to get the runnable RSpec command:"
-puts
-lines = []
-
 def bold(str)
   "\e[1m#{str}\e[0m"
 end
 
-trap('INT') do
-  cli_args = lines.join.scan(/rspec (.*?) #/).flatten.sort.uniq.join(' ')
-  cli_args_files_only = lines.join.scan(/rspec (.*?):/).flatten.sort.uniq.join(' ')
-  puts lines.join.inspect
-  puts
-  puts <<~STR
-    #{bold('Runnable command with line numbers:')}
+def output_commands(lines, use_bold: true)
+  content = lines.join
+  cli_args = content.scan(/rspec (.*?) #/).flatten.sort.uniq.join(' ')
+  cli_args_files_only = content.scan(/rspec (.*?):/).flatten.sort.uniq.join(' ')
 
-    #{bold('rspec')} #{bold(cli_args)}
+  if use_bold
+    puts <<~STR
+      #{bold('Runnable command with line numbers:')}
 
-    #{bold('Runnable command by file:')}
+      #{bold('rspec')} #{bold(cli_args)}
 
-    #{bold('rspec')} #{bold(cli_args_files_only)}
-  STR
-  exit
+      #{bold('Runnable command by file:')}
+
+      #{bold('rspec')} #{bold(cli_args_files_only)}
+    STR
+  else
+    puts "Runnable command with line numbers:"
+    puts
+    puts "rspec #{cli_args}"
+    puts
+    puts "Runnable command by file:"
+    puts
+    puts "rspec #{cli_args_files_only}"
+  end
 end
 
-loop do
-  lines << gets
+if options[:stdin]
+  # Non-interactive mode: read from stdin until EOF
+  lines = STDIN.readlines
+  output_commands(lines, use_bold: false)
+else
+  # Interactive mode: read until Ctrl-C
+  puts "Please paste in the failed RSpec output. Hit Ctrl-c when done to get the runnable RSpec command:"
+  puts
+  lines = []
+
+  trap('INT') do
+    puts
+    output_commands(lines)
+    exit
+  end
+
+  loop do
+    lines << gets
+  end
 end
