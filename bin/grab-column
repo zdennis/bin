@@ -1,40 +1,46 @@
 #!/usr/bin/env ruby
 
-SCRIPT_NAME=File.basename(__FILE__)
+VERSION = "1.0.0"
+SCRIPT_NAME = File.basename(__FILE__)
+
+def print_help
+  puts <<-EOT.gsub(/^\s+\|/, '')
+    |Usage: ls | grab <column number>
+    |       #{SCRIPT_NAME} <column number> < INFILE
+    |       #{SCRIPT_NAME} <column number> <column number2> <column number3> ... < INFILE
+    |
+    |#{SCRIPT_NAME} outputs a specific column of content from STDIN.
+    |
+    |  column number - the numeric index of the column you want
+    |        to output. This is 1-based Not 0-based.
+    |
+    |Example #1: Grabbing the filename from ls -l
+    |  ls -l | #{SCRIPT_NAME} 9
+    |
+    |Example #2: Grabbing the list of modified file names in your Git index
+    |  git status | grep modified: | #{SCRIPT_NAME} 3
+    |
+    |Example #3: Grabbing multiple columns
+    |  ls -l | #{SCRIPT_NAME} 1 9
+    |
+    |Author: Zach Dennis (zach.dennis@gmail.com)
+    |        http://www.continuousthinking.com
+  EOT
+end
+
+if ARGV.include?("--version") || ARGV.include?("-v")
+  puts "#{SCRIPT_NAME} #{VERSION}"
+  exit 0
+end
+
+if ARGV.include?("--help") || ARGV.include?("-h")
+  print_help
+  exit 0
+end
 
 if STDIN.tty?
-  def print_help
-    puts <<-EOT.gsub(/^\s+\|/, '')
-      |Usage: ls | grab <column number>
-      |       #{SCRIPT_NAME} <column number> < INFILE
-      |       #{SCRIPT_NAME} <column number> <column number2> <column number3> ... < INFILE
-      |
-      |#{SCRIPT_NAME} outputs a specific column of content from STDIN.
-      |
-      |  column number - the numeric index of the column you want
-      |        to output. This is 1-based Not 0-based.
-      |
-      |Example #1: Grabbing the filename from ls -l
-      |  ls -l | #{SCRIPT_NAME} 9
-      |
-      |Example #2: Grabbing the list of modified file names in your Git index
-      |  git status | grep modified: | #{SCRIPT_NAME} 3
-      |
-      |Example #3: Grabbing multiple columns
-      |  ls -l | #{SCRIPT_NAME} 1 9
-      |
-      |Author: Zach Dennis (zach.dennis@gmail.com)
-      |        http://www.continuousthinking.com
-    EOT
-  end
-
-  if ["-h", "--help"].include?(ARGV.first)
-    print_help
-    exit 0
-  else
-    print_help
-    exit 1
-  end
+  print_help
+  exit 1
 else
   # we are 1-based, so convert to 0-based
   columns = ARGV.map { |i| i.to_i - 1 }
