@@ -1,0 +1,101 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+VERSION = "1.0.0"
+SCRIPT_NAME = File.basename(__FILE__)
+
+def print_help
+  puts <<~HELP
+    #{SCRIPT_NAME} extracts text matching regex patterns from each line of stdin.
+
+    Usage: command | #{SCRIPT_NAME} <pattern> [pattern2] ...
+           #{SCRIPT_NAME} <pattern> < INFILE
+
+    Each pattern is a Ruby regular expression. For each line, the first match
+    of each pattern is extracted and output in columns.
+
+    Options:
+      -v, --version    Show version
+      -h, --help       Show this help
+
+    Examples:
+      # Extract all numbers from each line
+      echo "Order 123 costs $45" | #{SCRIPT_NAME} '\\d+'
+      # Output: 123
+
+      # Extract multiple patterns (IP and status code)
+      echo "192.168.1.1 GET /api 200" | #{SCRIPT_NAME} '\\d+\\.\\d+\\.\\d+\\.\\d+' '\\d+$'
+      # Output: 192.168.1.1    200
+
+      # Extract email addresses
+      cat contacts.txt | #{SCRIPT_NAME} '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}'
+
+      # Use capture groups to extract specific parts
+      echo "name=John age=30" | #{SCRIPT_NAME} 'name=(\\w+)' 'age=(\\d+)'
+      # Output: John    30
+
+    Author: Zach Dennis (zach.dennis@gmail.com)
+  HELP
+end
+
+# Parse options
+if ARGV.include?("-v") || ARGV.include?("--version")
+  puts "#{SCRIPT_NAME} #{VERSION}"
+  exit 0
+end
+
+if ARGV.include?("-h") || ARGV.include?("--help") || (STDIN.tty? && ARGV.empty?)
+  print_help
+  exit(ARGV.include?("-h") || ARGV.include?("--help") ? 0 : 1)
+end
+
+if STDIN.tty?
+  print_help
+  exit 1
+end
+
+if ARGV.empty?
+  $stderr.puts "#{SCRIPT_NAME}: no patterns specified"
+  exit 1
+end
+
+# Compile regexes with error handling
+regexes = ARGV.map do |pattern|
+  begin
+    Regexp.new(pattern)
+  rescue RegexpError => e
+    $stderr.puts "#{SCRIPT_NAME}: invalid pattern '#{pattern}': #{e.message}"
+    exit 1
+  end
+end
+
+# Process input
+results = STDIN.readlines.map do |line|
+  regexes.map do |regex|
+    match = line.scan(regex).first
+    # Handle capture groups: if match is an array (from capture groups), join it
+    case match
+    when Array then match.first || ""
+    when String then match
+    else ""
+    end
+  end
+end
+
+# Calculate max widths for each column
+max_widths = Array.new(regexes.length, 0)
+results.each do |row|
+  row.each_with_index do |value, i|
+    max_widths[i] = value.length if value.length > max_widths[i]
+  end
+end
+
+# Output with aligned columns
+results.each do |row|
+  formatted = row.each_with_index.map do |value, i|
+    # Don't pad the last column
+    i == row.length - 1 ? value : value.ljust(max_widths[i])
+  end
+  puts formatted.join("\t")
+end
