@@ -2,7 +2,13 @@
 
 require 'optparse'
 
-SCRIPT_NAME=File.basename(__FILE__)
+VERSION = "1.0.0"
+SCRIPT_NAME = File.basename(__FILE__)
+
+if ARGV.include?("--version") || ARGV.include?("-v")
+  puts "#{SCRIPT_NAME} #{VERSION}"
+  exit 0
+end
 
 options = {
   multiline: false,
