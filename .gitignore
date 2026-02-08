@@ -13,3 +13,6 @@
 script/*
 !script/rspec
 !script/bundle
+
+# RSpec status file
+spec/.rspec_status
