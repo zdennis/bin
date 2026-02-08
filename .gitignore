@@ -1,0 +1,10 @@
+# Claude Code
+.claude/settings.local.json
+.claude/projects/
+.claude/todos.json
+.claude/*.log
+
+# Nested .claude directories (e.g., in subdirectories)
+**/.claude/settings.local.json
+**/.claude/projects/
+**/.claude/todos.json
