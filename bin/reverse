@@ -1,3 +1,29 @@
 #!/usr/bin/env ruby
 
+VERSION = "1.0.0"
+SCRIPT_NAME = File.basename(__FILE__)
+
+if ARGV.include?("--version") || ARGV.include?("-v")
+  puts "#{SCRIPT_NAME} #{VERSION}"
+  exit 0
+end
+
+if ARGV.include?("--help") || ARGV.include?("-h")
+  puts <<~HELP
+    Usage: command | #{SCRIPT_NAME}
+           #{SCRIPT_NAME} < INFILE
+
+    Reverses the order of lines from stdin.
+
+    Options:
+      -v, --version    Show version
+      -h, --help       Show this help
+
+    Example:
+      echo -e "line1\\nline2\\nline3" | #{SCRIPT_NAME}
+      # Output: line3, line2, line1
+  HELP
+  exit 0
+end
+
 puts STDIN.readlines.reverse
