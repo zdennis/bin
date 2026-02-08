@@ -1,7 +1,7 @@
 ---
 name: readme
-description: Create and update README documentation for tools
-arguments: command [tool-name]
+description: Create and update README documentation for tools in bin/
+argument-hint: <command> [tool-name]
 ---
 
 # README Skill
