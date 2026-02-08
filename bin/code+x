@@ -1,12 +1,38 @@
 #!/usr/bin/env bash
 
-VERSION="1.0.0"
+VERSION="1.1.0"
 
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
   echo "code+x $VERSION"
   exit 0
 fi
 
-touchp $@ &&
-  chmod a+x $@ &&
-  code $@
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  echo "Usage: code+x [options] <file>..."
+  echo ""
+  echo "Create executable file(s) with parent directories and open in VS Code."
+  echo ""
+  echo "Options:"
+  echo "  --no-edit     Create file(s) but don't open in VS Code"
+  echo "  -v, --version Show version"
+  echo "  -h, --help    Show this help"
+  exit 0
+fi
+
+NO_EDIT=0
+if [[ "$1" == "--no-edit" ]]; then
+  NO_EDIT=1
+  shift
+fi
+
+if [[ $# -eq 0 ]]; then
+  echo "Error: No files specified" >&2
+  exit 1
+fi
+
+touchp "$@" &&
+  chmod a+x "$@" || exit 1
+
+if [[ $NO_EDIT -eq 0 ]]; then
+  code "$@"
+fi
