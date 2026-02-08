@@ -1,20 +1,49 @@
 #!/usr/bin/env ruby
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 if ARGV.include?("--version") || ARGV.include?("-v")
   puts "brew-upgrade-with-logs #{VERSION}"
   exit 0
 end
 
+if ARGV.include?("--help") || ARGV.include?("-h")
+  puts <<~HELP
+    Usage: brew-upgrade-with-logs [options]
+
+    Runs 'brew update && brew upgrade' and logs output to a timestamped file.
+
+    Options:
+      --log-dir DIR   Directory for log files (default: ~/.brew-upgrades)
+      --dry-run       Show what would be executed without running it
+      -v, --version   Show version
+      -h, --help      Show this help
+  HELP
+  exit 0
+end
+
 require "fileutils"
 
-log_directory = File.join(ENV["HOME"], ".brew-upgrades")
-FileUtils.mkdir_p log_directory
+# Parse options
+dry_run = ARGV.delete("--dry-run")
+log_dir_idx = ARGV.index("--log-dir")
+if log_dir_idx
+  ARGV.delete_at(log_dir_idx)
+  log_directory = ARGV.delete_at(log_dir_idx)
+else
+  log_directory = File.join(ENV["HOME"], ".brew-upgrades")
+end
 
-timestamp = %x{echo $(date -j '+%Y-%m-%d_%Hh%Mm%Ss')}.chomp
+FileUtils.mkdir_p(log_directory) unless dry_run
+
+timestamp = Time.now.strftime('%Y-%m-%d_%Hh%Mm%Ss')
 log_file = File.join(log_directory, "#{timestamp}.log")
 upgrade_command = "brew update && brew upgrade | tee -a '#{log_file}'"
 
 puts "Upgrading brew with command: #{upgrade_command}"
-exec upgrade_command
+
+if dry_run
+  puts "(dry-run: command not executed)"
+else
+  exec upgrade_command
+end
