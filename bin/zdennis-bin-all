@@ -7,7 +7,7 @@
 # This is a meta-package that installs all zdennis/bin tools.
 # Run this command to see what's included.
 
-VERSION="1.1.1"
+VERSION="1.1.2"
 
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
   echo "zdennis-bin-all $VERSION"
@@ -18,6 +18,7 @@ echo "zdennis/bin tools v$VERSION (installed via 'brew install zdennis/bin/zdenn
 echo ""
 echo "  alias-directory (1.0.0)           - Manage directory aliases for quick navigation"
 echo "  ascii-banner (1.0.0)              - Create ASCII art banners with color and styling"
+echo "  code+x (1.0.0)                    - Create executable files and open them in VS Code"
 echo "  codep (1.0.0)                     - Run commands in parallel with formatted output"
 echo "  queue-commands (1.0.0)            - Queue and execute commands sequentially"
 echo "  retry-command (1.0.0)             - Retry failed commands with configurable attempts"
