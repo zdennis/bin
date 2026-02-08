@@ -2,20 +2,30 @@
 #
 # zdennis-bin-all - List all zdennis/bin tools available via Homebrew
 #
-# Usage: zdennis-bin-all
+# Usage: zdennis-bin-all [--version]
 #
 # This is a meta-package that installs all zdennis/bin tools.
 # Run this command to see what's included.
 
-echo "zdennis/bin tools (installed via 'brew install zdennis/bin/zdennis-bin-all'):"
+VERSION="1.1.0"
+
+if [[ "$1" == "--version" || "$1" == "-v" ]]; then
+  echo "zdennis-bin-all $VERSION"
+  exit 0
+fi
+
+echo "zdennis/bin tools v$VERSION (installed via 'brew install zdennis/bin/zdennis-bin-all'):"
 echo ""
-echo "  alias-directory          - Manage directory aliases for quick navigation"
-echo "  ascii-banner             - Create ASCII art banners with color and styling"
-echo "  codep                    - Run commands in parallel with formatted output"
-echo "  queue-commands           - Queue and execute commands sequentially"
-echo "  retry-command            - Retry failed commands with configurable attempts"
-echo "  run-through              - Run a command through multiple directories"
-echo "  set-random-background-color - Set random terminal background color"
-echo "  touchp                   - Touch files, creating parent directories as needed"
+echo "  alias-directory (1.0.0)           - Manage directory aliases for quick navigation"
+echo "  ascii-banner (1.0.0)              - Create ASCII art banners with color and styling"
+echo "  codep (1.0.0)                     - Run commands in parallel with formatted output"
+echo "  queue-commands (1.0.0)            - Queue and execute commands sequentially"
+echo "  retry-command (1.0.0)             - Retry failed commands with configurable attempts"
+echo "  run-through (1.1.0)               - Run a command through multiple directories"
+echo "  set-random-background-color (1.0.0) - Set random terminal background color"
+echo "  touchp (1.0.0)                    - Touch files, creating parent directories as needed"
+echo ""
+echo "Note: Versions shown are what this formula installs. If you installed tools"
+echo "separately, you may have different versions. Use '<tool> --version' to check."
 echo ""
 echo "For help on any tool, run: <tool-name> --help"
