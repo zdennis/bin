@@ -9,10 +9,9 @@
 **/.claude/projects/
 **/.claude/todos.json
 
-# Ignore generated binstubs except rspec and bundle
+# Ignore generated binstubs except rspec
 script/*
 !script/rspec
-!script/bundle
 
 # RSpec status file
 spec/.rspec_status
