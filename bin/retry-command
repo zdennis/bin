@@ -1,0 +1,162 @@
+#!/bin/bash
+set -euo pipefail
+
+VERSION="1.0.0"
+SCRIPT_NAME="$(basename "$0")"
+
+# Default values
+DELAY=10
+MAX_RETRIES=0  # 0 = unlimited
+STOP_ON_SUCCESS=false
+QUIET=false
+
+usage() {
+    cat <<EOF
+Usage: $SCRIPT_NAME [options] -- <command> [args...]
+
+Retries a command until it succeeds, with configurable delay and retry limits.
+By default, also reruns after success (supervisor mode). Use -s to stop on success.
+
+Options:
+    -d, --delay SECONDS    Delay between retries (default: 10)
+    -m, --max-retries N    Maximum retry attempts, 0 for unlimited (default: 0)
+    -s, --stop-on-success  Exit after command succeeds (don't rerun)
+    -q, --quiet            Suppress retry status messages
+    -h, --help             Show this help message
+    -v, --version          Show version number
+
+Examples:
+    # Keep retrying until command succeeds, then exit
+    $SCRIPT_NAME -s -- curl -f http://example.com/health
+
+    # Retry up to 5 times with 30 second delay
+    $SCRIPT_NAME -m 5 -d 30 -s -- ./deploy.sh
+
+    # Supervisor mode: keep command running forever, restart on exit
+    $SCRIPT_NAME -- ./my-server
+
+    # Quiet mode for scripts
+    $SCRIPT_NAME -q -s -m 10 -- pg_isready -h localhost
+EOF
+}
+
+# Parse options
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -d|--delay)
+            if [[ -z "${2:-}" ]] || [[ "$2" == -* ]]; then
+                echo "Error: --delay requires a numeric argument" >&2
+                exit 1
+            fi
+            if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+                echo "Error: --delay must be a positive integer" >&2
+                exit 1
+            fi
+            DELAY="$2"
+            shift 2
+            ;;
+        -m|--max-retries)
+            if [[ -z "${2:-}" ]] || [[ "$2" == -* ]]; then
+                echo "Error: --max-retries requires a numeric argument" >&2
+                exit 1
+            fi
+            if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+                echo "Error: --max-retries must be a non-negative integer" >&2
+                exit 1
+            fi
+            MAX_RETRIES="$2"
+            shift 2
+            ;;
+        -s|--stop-on-success)
+            STOP_ON_SUCCESS=true
+            shift
+            ;;
+        -q|--quiet)
+            QUIET=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -v|--version)
+            echo "$SCRIPT_NAME $VERSION"
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            echo "Error: Unknown option: $1" >&2
+            echo "Run '$SCRIPT_NAME --help' for usage information." >&2
+            exit 1
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+# Check if a command is provided
+if [[ $# -lt 1 ]]; then
+    echo "Error: No command specified" >&2
+    echo "Run '$SCRIPT_NAME --help' for usage information." >&2
+    exit 1
+fi
+
+# Store the command as an array to preserve arguments properly
+COMMAND=("$@")
+
+# Track retry state
+attempt=0
+total_elapsed=0
+
+# Handle Ctrl-C gracefully
+trap 'echo ""; echo "Interrupted."; exit 130' INT TERM
+
+log() {
+    if [[ "$QUIET" != true ]]; then
+        echo "$@"
+    fi
+}
+
+# Main retry loop
+while true; do
+    attempt=$((attempt + 1))
+
+    # Execute the command
+    set +e
+    "${COMMAND[@]}"
+    exit_code=$?
+    set -e
+
+    if [[ $exit_code -eq 0 ]]; then
+        # Command succeeded
+        if [[ "$STOP_ON_SUCCESS" == true ]]; then
+            log "Command succeeded."
+            exit 0
+        else
+            # Supervisor mode: rerun after success
+            log "Command exited successfully. Restarting in ${DELAY} seconds..."
+            total_elapsed=0
+            sleep "$DELAY"
+        fi
+    else
+        # Command failed
+        total_elapsed=$((total_elapsed + DELAY))
+
+        if [[ $MAX_RETRIES -gt 0 ]] && [[ $attempt -ge $MAX_RETRIES ]]; then
+            log "Command failed after $attempt attempt(s). Giving up."
+            exit 1
+        fi
+
+        if [[ $MAX_RETRIES -gt 0 ]]; then
+            log "Attempt $attempt/$MAX_RETRIES failed (exit code: $exit_code). Retrying in ${DELAY} seconds..."
+        else
+            log "Attempt $attempt failed (exit code: $exit_code). Retrying in ${DELAY} seconds... (total wait: ${total_elapsed}s)"
+        fi
+
+        sleep "$DELAY"
+    fi
+done

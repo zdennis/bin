@@ -15,6 +15,7 @@ Personal bin scripts for zdennis.
 | grab-pattern | [README](docs/README.grab-pattern.md) | Extracts text matching regex patterns from stdin. Supports multiple patterns and capture groups. |
 | group-by | [README](docs/README.group-by.md) | Groups stdin lines by regex pattern matches, with optional multiline support and summary output. |
 | queue-commands | [README](docs/README.queue-commands.md) | Runs commands from a file sequentially, pausing on failures for interactive fixing. |
+| retry-command | [README](docs/README.retry-command.md) | Retries a command until it succeeds, with configurable delay and retry limits. |
 | reverse | [README](docs/README.reverse.md) | Reverses the order of lines from stdin. |
 | rspec-paste-failures | [README](docs/README.rspec-paste-failures.md) | Converts RSpec failure output into a runnable rspec command with file:line references. |
 | rt | [README](docs/README.rt.md) | Alias for `run-through`. Pipes files through one or more shell commands. |
