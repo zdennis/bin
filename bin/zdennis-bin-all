@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# zdennis-bin-all - List all zdennis/bin tools available via Homebrew
+#
+# Usage: zdennis-bin-all
+#
+# This is a meta-package that installs all zdennis/bin tools.
+# Run this command to see what's included.
+
+echo "zdennis/bin tools (installed via 'brew install zdennis/bin/zdennis-bin-all'):"
+echo ""
+echo "  alias-directory          - Manage directory aliases for quick navigation"
+echo "  ascii-banner             - Create ASCII art banners with color and styling"
+echo "  codep                    - Run commands in parallel with formatted output"
+echo "  queue-commands           - Queue and execute commands sequentially"
+echo "  retry-command            - Retry failed commands with configurable attempts"
+echo "  run-through              - Run a command through multiple directories"
+echo "  set-random-background-color - Set random terminal background color"
+echo "  touchp                   - Touch files, creating parent directories as needed"
+echo ""
+echo "For help on any tool, run: <tool-name> --help"
