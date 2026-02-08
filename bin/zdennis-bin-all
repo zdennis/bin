@@ -7,7 +7,7 @@
 # This is a meta-package that installs all zdennis/bin tools.
 # Run this command to see what's included.
 
-VERSION="1.1.0"
+VERSION="1.1.1"
 
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
   echo "zdennis-bin-all $VERSION"
