@@ -4,15 +4,17 @@
 require 'optparse'
 require 'fileutils'
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 SCRIPT_NAME = File.basename(__FILE__)
 
 class AliasDirectory
-  RC_FILE = File.expand_path('~/.alias-directoryrc')
+  DEFAULT_RC_FILE = File.expand_path('~/.alias-directoryrc')
   INVALID_SHELL_CHARS = /[&:;\[\]|<>`$(){}!#*?\\'"]/
 
   def initialize(args)
-    @args = args
+    @args = args.dup
+    @rc_file = DEFAULT_RC_FILE
+    parse_global_options!
   end
 
   def run
@@ -49,9 +51,27 @@ class AliasDirectory
 
   private
 
+  def parse_global_options!
+    while @args.first&.start_with?('--')
+      opt = @args.shift
+      case opt
+      when /^--rc-file=(.+)$/
+        @rc_file = $1
+      when '--rc-file'
+        @rc_file = @args.shift
+      else
+        @args.unshift(opt)
+        break
+      end
+    end
+  end
+
   def show_usage
     puts <<~USAGE
-      Usage: ad <command> [arguments]
+      Usage: ad [options] <command> [arguments]
+
+      Options:
+        --rc-file PATH          Use a custom RC file (default: ~/.alias-directoryrc)
 
       Commands:
         config                  Show configuration information
@@ -63,11 +83,12 @@ class AliasDirectory
         ad list
         ad create myproject ~/Code/myproject
         ad create myproject                      # uses current directory
+        ad --rc-file=/tmp/test.rc list           # use custom RC file
     USAGE
   end
 
   def show_config
-    puts "RC file: #{RC_FILE}"
+    puts "RC file: #{@rc_file}"
   end
 
   def list_aliases
@@ -109,14 +130,14 @@ class AliasDirectory
   end
 
   def ensure_rc_file_exists
-    FileUtils.touch(RC_FILE) unless File.exist?(RC_FILE)
+    FileUtils.touch(@rc_file) unless File.exist?(@rc_file)
   end
 
   def parse_aliases
-    return {} unless File.exist?(RC_FILE)
+    return {} unless File.exist?(@rc_file)
 
     aliases = {}
-    File.readlines(RC_FILE).each do |line|
+    File.readlines(@rc_file).each do |line|
       line = line.strip
       next if line.empty? || line.start_with?('#')
 
@@ -130,7 +151,7 @@ class AliasDirectory
   end
 
   def write_aliases(aliases)
-    File.open(RC_FILE, 'w') do |f|
+    File.open(@rc_file, 'w') do |f|
       f.puts "# Directory aliases managed by alias-directory"
       f.puts "# Do not edit manually - changes may be overwritten"
       f.puts

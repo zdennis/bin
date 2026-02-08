@@ -1,20 +1,21 @@
 # frozen_string_literal: true
 
 RSpec.describe "alias-directory" do
-  # Use a temporary HOME to isolate the .alias-directoryrc file
+  # Use a temporary RC file to isolate tests
   around(:each) do |example|
     with_temp_dir do |dir|
-      @temp_home = dir
+      @temp_dir = dir
+      @rc_file = File.join(dir, ".alias-directoryrc")
       example.run
     end
   end
 
   def run_alias_directory(*args)
-    run_tool("alias-directory", *args, env: { "HOME" => @temp_home })
+    run_tool("alias-directory", "--rc-file=#{@rc_file}", *args)
   end
 
   def rc_file_path
-    File.join(@temp_home, ".alias-directoryrc")
+    @rc_file
   end
 
   describe "--version" do
@@ -116,13 +117,13 @@ RSpec.describe "alias-directory" do
     end
 
     it "creates an alias using current directory when path is omitted" do
-      with_temp_dir do |project_dir|
-        Dir.chdir(project_dir) do
-          result = run_alias_directory("create", "current")
+      project_dir = File.join(@temp_dir, "project")
+      FileUtils.mkdir_p(project_dir)
+      Dir.chdir(project_dir) do
+        result = run_alias_directory("create", "current")
 
-          expect(result.stdout).to include("Alias 'current' set to: cd #{project_dir}")
-          expect(result).to be_success
-        end
+        expect(result.stdout).to include("Alias 'current' set to: cd #{project_dir}")
+        expect(result).to be_success
       end
     end
 
