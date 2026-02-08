@@ -1,0 +1,150 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'optparse'
+
+VERSION = '1.0.0'
+SCRIPT_NAME = File.basename(__FILE__)
+
+STDOUT.sync = true
+STDERR.sync = true
+
+options = {
+  verbose: false,
+  wait_on_each_command: false,
+  continue_on_error: false
+}
+
+parser = OptionParser.new do |opts|
+  opts.banner = <<~BANNER
+    Usage: #{SCRIPT_NAME} [options] -f FILE
+
+    Reads a file of commands and runs each in sequence from top to bottom,
+    pausing whenever a command has a non-zero exit code.
+
+    Lines starting with '#' are treated as comments and skipped.
+    Empty lines are ignored.
+
+  BANNER
+
+  opts.separator "Options:"
+
+  opts.on("-f", "--file=FILE", "File to read commands from (required)") do |file|
+    options[:file] = file
+  end
+
+  opts.on("-w", "--wait", "Pause for confirmation before running each command") do
+    options[:wait_on_each_command] = true
+  end
+
+  opts.on("-c", "--continue", "Continue on error without pausing") do
+    options[:continue_on_error] = true
+  end
+
+  opts.on("-v", "--verbose", "Print additional information about command execution") do
+    options[:verbose] = true
+  end
+
+  opts.on("-h", "--help", "Show this help message") do
+    puts opts
+    exit 0
+  end
+
+  opts.on("--version", "Show version number") do
+    puts "#{SCRIPT_NAME} #{VERSION}"
+    exit 0
+  end
+end
+
+begin
+  parser.parse!
+rescue OptionParser::InvalidOption, OptionParser::MissingArgument => e
+  warn "Error: #{e.message}"
+  warn "Run '#{SCRIPT_NAME} --help' for usage information."
+  exit 1
+end
+
+unless options[:file]
+  warn "Error: Missing required option: -f FILE"
+  warn "Run '#{SCRIPT_NAME} --help' for usage information."
+  exit 1
+end
+
+unless File.exist?(options[:file])
+  warn "Error: File not found: #{options[:file]}"
+  exit 1
+end
+
+unless File.readable?(options[:file])
+  warn "Error: Cannot read file: #{options[:file]}"
+  exit 1
+end
+
+commands = File.readlines(options[:file], chomp: true)
+total_commands = commands.reject { |c| c.strip.empty? || c.strip.start_with?('#') }.size
+executed = 0
+failed = 0
+
+if options[:verbose]
+  puts "Loaded #{total_commands} command(s) from #{options[:file]}"
+  puts
+end
+
+while !commands.empty?
+  command = commands.shift
+
+  # Skip comments and empty lines early
+  next if command.strip.empty?
+  next if command.strip.start_with?('#')
+
+  executed += 1
+
+  if options[:wait_on_each_command]
+    puts "Command #{executed}/#{total_commands}:"
+    puts "  #{command}"
+    print "Hit Enter to run or Ctrl-C to quit: "
+    begin
+      gets
+    rescue Interrupt
+      puts
+      puts "Aborted."
+      exit 130
+    end
+  end
+
+  if options[:verbose]
+    puts "[#{executed}/#{total_commands}] Running: #{command}"
+  else
+    print "Running... #{command} "
+  end
+
+  success = system(command)
+
+  if success
+    puts "\e[32mdone\e[0m"
+  else
+    failed += 1
+    exit_code = $?.exitstatus || 1
+    puts "\e[31mfailed\e[0m (exit code: #{exit_code})"
+
+    unless options[:continue_on_error]
+      puts
+      puts "\e[33mFix the issue and hit Enter to continue or Ctrl-C to quit.\e[0m"
+      begin
+        gets
+      rescue Interrupt
+        puts
+        puts "Aborted."
+        exit 130
+      end
+    end
+  end
+
+  puts if options[:verbose] || !options[:wait_on_each_command]
+end
+
+if options[:verbose]
+  puts "Completed: #{executed} command(s), #{failed} failed"
+end
+
+exit(failed > 0 ? 1 : 0)
