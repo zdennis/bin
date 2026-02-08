@@ -1,7 +1,7 @@
 ---
 name: release
 description: Release a tool by creating and pushing a version tag
-argument-hint: <tool-name>
+argument-hint: <tool-name> [--version <version>]
 ---
 
 # Release Tool
@@ -12,11 +12,25 @@ Release a tool by creating and pushing a version tag.
 
 ```
 /release <tool-name>
+/release <tool-name> --version <version>
 ```
 
 ## Instructions
 
 When the user invokes this skill with a tool name:
+
+### If `--version` is provided:
+
+Skip change analysis and use the specified version directly:
+
+1. **Verify the tool exists** in the `bin/` directory
+2. **Update the version** in the tool's source code to the specified version
+3. **Commit the version change** with message: `<tool-name>: bump version to <version>`
+4. **Create the tag** in the format `<tool-name>-v<version>`
+5. **Check if tag exists** - if the tag already exists, inform the user and stop
+6. **Push the commit and tag** to origin
+
+### If `--version` is NOT provided:
 
 1. **Verify the tool exists** in the `bin/` directory
 2. **Get the current version** by running `bin/<tool-name> --version` and parsing the version number
@@ -59,6 +73,20 @@ This will:
 - Commit the version change
 - Create tag `ascii-banner-v<new-version>`
 - Push the commit and tag to origin
+
+### With explicit version
+
+```
+/release ascii-banner --version 2.0.0
+```
+
+This will:
+- Update the VERSION in the tool to 2.0.0
+- Commit the version change
+- Create tag `ascii-banner-v2.0.0`
+- Push the commit and tag to origin
+
+No change analysis is performed when `--version` is specified.
 
 ## Change Analysis Guidelines
 
