@@ -8,3 +8,8 @@
 **/.claude/settings.local.json
 **/.claude/projects/
 **/.claude/todos.json
+
+# Ignore generated binstubs except rspec and bundle
+script/*
+!script/rspec
+!script/bundle
