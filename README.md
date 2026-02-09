@@ -10,6 +10,62 @@ I like making things that help me work better. Sometimes that's big stuff. Somet
 
 This repository is a collection of those scripts—things I've built to make my day go a little smoother.
 
+## Highlights
+
+**ascii-banner** — Big text for terminal headers, section breaks, or just fun.
+
+```
+$ ascii-banner "DEPLOY"
+██████      ██████████  ██████████    ██            ██████    ██      ██
+██    ██    ██          ██    ██      ██          ██      ██    ██  ██
+██      ██  ████████    ██████████    ██          ██      ██      ██
+██    ██    ██          ██            ██          ██      ██      ██
+██████      ██████████  ██            ██████████    ██████        ██
+```
+
+**alias-directory** — Jump to project directories without remembering paths.
+
+```bash
+$ ad create work ~/Code/work/big-project
+$ ad create dotfiles ~/.dotfiles
+
+# Later, from anywhere:
+$ cd $(ad work)
+$ cd $(ad dotfiles)
+```
+
+**codep & code+x** — Create files (with parent directories) and open them in VS Code. `code+x` also makes it executable—perfect for starting new scripts.
+
+```bash
+$ code+x bin/my-new-tool
+# Creates bin/my-new-tool, chmod +x, opens in VS Code
+```
+
+**rspec-paste-failures** — Copy RSpec's failure output, paste it, get a runnable command. No manual extraction needed.
+
+```
+$ rspec-paste-failures
+Paste your RSpec output (Ctrl+D when done):
+
+4992 examples, 3 failures
+
+Failed examples:
+
+rspec ./spec/bar_spec.rb:23 # failed for a reason
+rspec ./spec/baz_spec.rb:32 # failed for another reason
+rspec ./spec/foo_spec.rb:78 # failed for a third reason
+^D
+
+rspec ./spec/bar_spec.rb:23 ./spec/baz_spec.rb:32 ./spec/foo_spec.rb:78
+```
+
+**run-through** — Pipe file lists through multiple commands. Great for running linters on changed files.
+
+```bash
+# Run rubocop and reek on specs changed in this branch
+$ git diff main --name-only | grep '_spec\.rb$' | xargs run-through -c rubocop -c reek
+```
+
 ## Directory Structure
 
 ```
