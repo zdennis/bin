@@ -13,6 +13,7 @@ Create and update README documentation for tools in this repository.
 ```
 /readme create [tool-name]
 /readme update [tool-name]
+/readme update_ruby_compatibility
 ```
 
 If `tool-name` is omitted, operates on all **committed** tools in `bin/`.
@@ -42,6 +43,16 @@ Updates existing README documentation:
 2. Check git history for changes to the tool since that date/SHA
 3. If changes exist, re-analyze the tool and update the README
 4. Update the "Last analyzed" section with current date/time and SHA
+5. **Automatically runs `update_ruby_compatibility`** after completing
+
+### update_ruby_compatibility
+
+Updates the Compatibility section in README.md based on Ruby versions in the GitHub Actions workflow:
+
+1. Read `.github/workflows/test.yml`
+2. Extract Ruby versions from the `matrix.ruby-version` array
+3. Update the `<!-- BEGIN RUBY VERSIONS -->...<!-- END RUBY VERSIONS -->` block in README.md
+4. Format as "Tested on Ruby X.Y and Z.W." (or similar based on version count)
 
 ## Top-level README.md Structure
 
@@ -123,6 +134,8 @@ Not all tools may be available. If there's a tool you'd like to install via Home
 
 4. **Update the top-level README.md Tools table** with any new tools
 
+5. **Run `update_ruby_compatibility`** to ensure Ruby versions are current
+
 ### When running `update`:
 
 1. **For each tool README to update:**
@@ -138,6 +151,25 @@ Not all tools may be available. If there's a tool you'd like to install via Home
    - Update "Last analyzed" with current date and new SHA
 
 3. **Update the top-level README.md** if descriptions changed
+
+4. **Run `update_ruby_compatibility`** to ensure Ruby versions are current
+
+### When running `update_ruby_compatibility`:
+
+1. **Read the workflow file:**
+   - Read `.github/workflows/test.yml`
+   - Parse the YAML to find `jobs.test.strategy.matrix.ruby-version`
+   - Extract the array of Ruby versions (e.g., `['3.4', '4.0']`)
+
+2. **Format the compatibility text:**
+   - For 1 version: "Tested on Ruby X.Y."
+   - For 2 versions: "Tested on Ruby X.Y and Z.W."
+   - For 3+ versions: "Tested on Ruby X.Y, Z.W, and A.B."
+
+3. **Update README.md:**
+   - Find the `<!-- BEGIN RUBY VERSIONS -->` and `<!-- END RUBY VERSIONS -->` markers
+   - Replace the content between them with the formatted text
+   - If markers don't exist, add a Compatibility section before the Developing section
 
 ### Important notes:
 

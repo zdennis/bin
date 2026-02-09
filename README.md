@@ -107,6 +107,12 @@ Some tools are also available via Homebrew. See [zdennis/homebrew-bin](https://g
 
 Not all tools may be available. If there's a tool you'd like to install via Homebrew, [open a GitHub issue](https://github.com/zdennis/homebrew-bin/issues/new) and let me know.
 
+## Compatibility
+
+<!-- BEGIN RUBY VERSIONS -->
+Tested on Ruby 3.4 and 4.0.
+<!-- END RUBY VERSIONS -->
+
 ## Developing
 
 ### Setup
