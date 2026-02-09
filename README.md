@@ -26,12 +26,15 @@ $ ascii-banner "DEPLOY"
 **alias-directory** — Jump to project directories without remembering paths.
 
 ```bash
-$ ad create work ~/Code/work/big-project
+# Tip: alias ad='alias-directory' makes this much easier
+$ ad create big-project ~/Code/work/big-project
 $ ad create dotfiles ~/.dotfiles
 
-# Later, from anywhere:
-$ cd $(ad work)
-$ cd $(ad dotfiles)
+# Source the rc file in your shell profile: source ~/.alias-directoryrc
+# Then just type the alias name to jump there:
+$ big-project
+$ pwd
+/Users/zdennis/Code/work/big-project
 ```
 
 **codep & code+x** — Create files (with parent directories) and open them in VS Code. `code+x` also makes it executable—perfect for starting new scripts.

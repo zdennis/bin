@@ -68,7 +68,7 @@ class AliasDirectory
 
   def show_usage
     puts <<~USAGE
-      Usage: ad [options] <command> [arguments]
+      Usage: alias-directory [options] <command> [arguments]
 
       Options:
         --rc-file PATH          Use a custom RC file (default: ~/.alias-directoryrc)
@@ -79,11 +79,20 @@ class AliasDirectory
         create <name> [path]    Add or update a directory alias (defaults to pwd)
 
       Examples:
-        ad config
-        ad list
-        ad create myproject ~/Code/myproject
-        ad create myproject                      # uses current directory
-        ad --rc-file=/tmp/test.rc list           # use custom RC file
+        alias-directory config
+        alias-directory list
+        alias-directory create myproject ~/Code/myproject
+        alias-directory create myproject                      # uses current directory
+        alias-directory --rc-file=/tmp/test.rc list           # use custom RC file
+
+      Tip: Create a shell alias for easier access:
+        alias ad='alias-directory'
+
+      Then source ~/.alias-directoryrc in your shell profile to use your directory aliases:
+        source ~/.alias-directoryrc
+
+      Once sourced, just type the alias name to jump to that directory:
+        myproject    # runs: cd ~/Code/myproject
     USAGE
   end
 
