@@ -4,6 +4,12 @@
 
 Personal bin scripts for zdennis.
 
+## Why This Exists
+
+I like making things that help me work better. Sometimes that's big stuff. Sometimes it's a small script that fills a gap and removes daily friction.
+
+This repository is a collection of those scripts—things I've built to make my day go a little smoother.
+
 ## Directory Structure
 
 ```
