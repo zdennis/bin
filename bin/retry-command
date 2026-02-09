@@ -126,8 +126,13 @@ while true; do
     attempt=$((attempt + 1))
 
     # Execute the command
+    # If single argument containing spaces, use eval to interpret it as a shell command
     set +e
-    "${COMMAND[@]}"
+    if [[ ${#COMMAND[@]} -eq 1 ]] && [[ "${COMMAND[0]}" == *" "* ]]; then
+        eval "${COMMAND[0]}"
+    else
+        "${COMMAND[@]}"
+    fi
     exit_code=$?
     set -e
 

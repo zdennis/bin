@@ -137,4 +137,19 @@ RSpec.describe "retry-command" do
   describe "supervisor mode", skip: "runs indefinitely without --stop-on-success" do
     it "reruns command after success"
   end
+
+  describe "command with arguments in a single string" do
+    it "executes the command correctly when passed as a single quoted string" do
+      with_temp_dir do |dir|
+        output_file = File.join(dir, "output.txt")
+        # Simulate: retry-command -s -d 0 -- 'echo hello world > output.txt'
+        # The command is passed as a single string argument
+        result = run_retry_command("-s", "-d", "0", "-m", "1", "--", "echo hello world > #{output_file}")
+
+        expect(result).to be_success
+        expect(File.exist?(output_file)).to be true
+        expect(File.read(output_file).strip).to eq("hello world")
+      end
+    end
+  end
 end
