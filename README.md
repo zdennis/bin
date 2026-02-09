@@ -41,8 +41,8 @@ docs/         # Documentation for each tool
 Clone the repository and add `bin/` to your PATH:
 
 ```bash
-git clone https://github.com/zdennis/bin.git ~/bin-zdennis
-export PATH="$HOME/bin-zdennis/bin:$PATH"
+git clone https://github.com/zdennis/bin.git ~/.bin-zdennis
+export PATH="$HOME/.bin-zdennis/bin:$PATH"
 ```
 
 To make it permanent, add the export line to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.).
