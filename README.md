@@ -36,9 +36,20 @@ docs/         # Documentation for each tool
 | set-random-background-color | [README](docs/README.set-random-background-color.md) | Sets iTerm2 background to a random dark color from a palette of 256 options. |
 | touchp | [README](docs/README.touchp.md) | Creates a file and all parent directories in its path. Combines `mkdir -p` and `touch`. |
 
-## How to install (Homebrew)
+## Installation
 
-Some tools are available via Homebrew. See [zdennis/homebrew-bin](https://github.com/zdennis/homebrew-bin) for available tools and installation instructions.
+Clone the repository and add `bin/` to your PATH:
+
+```bash
+git clone https://github.com/zdennis/bin.git ~/bin-zdennis
+export PATH="$HOME/bin-zdennis/bin:$PATH"
+```
+
+To make it permanent, add the export line to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.).
+
+### Homebrew
+
+Some tools are also available via Homebrew. See [zdennis/homebrew-bin](https://github.com/zdennis/homebrew-bin) for available tools and installation instructions.
 
 Not all tools may be available. If there's a tool you'd like to install via Homebrew, [open a GitHub issue](https://github.com/zdennis/homebrew-bin/issues/new) and let me know.
 
