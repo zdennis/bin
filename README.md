@@ -17,24 +17,72 @@ docs/         # Documentation for each tool
 
 ## Tools
 
-| Tool | README | Description |
-|------|--------|-------------|
-| alias-directory | [README](docs/README.alias-directory.md) | Creates and manages shell directory aliases stored in `~/.alias-directoryrc` for quick `cd` navigation. |
-| ascii-banner | [README](docs/README.ascii-banner.md) | Creates ASCII art banners from text with color, rainbow effects, auto-scaling, margins, and watch mode for terminal resize. |
-| brew-upgrade-with-logs | [README](docs/README.brew-upgrade-with-logs.md) | Runs `brew update && brew upgrade` while logging output to timestamped files in `~/.brew-upgrades/`. |
-| codep | [README](docs/README.codep.md) | Creates a file (with parent directories) and opens it in VS Code. Combines `touchp` and `code`. |
-| code+x | [README](docs/README.code+x.md) | Creates an executable file (with parent directories) and opens it in VS Code. Combines `touchp`, `chmod +x`, and `code`. |
-| grab-column | [README](docs/README.grab-column.md) | Extracts specific columns from stdin by column number. Like `awk '{print $N}'` but simpler. |
-| grab-pattern | [README](docs/README.grab-pattern.md) | Extracts text matching regex patterns from stdin. Supports multiple patterns and capture groups. |
-| group-by | [README](docs/README.group-by.md) | Groups stdin lines by regex pattern matches, with optional multiline support and summary output. |
-| queue-commands | [README](docs/README.queue-commands.md) | Runs commands from a file sequentially, pausing on failures for interactive fixing. |
-| retry-command | [README](docs/README.retry-command.md) | Retries a command until it succeeds, with configurable delay and retry limits. |
-| reverse | [README](docs/README.reverse.md) | Reverses the order of lines from stdin. |
-| rspec-paste-failures | [README](docs/README.rspec-paste-failures.md) | Converts RSpec failure output into a runnable rspec command with file:line references. |
-| rt | [README](docs/README.rt.md) | Alias for `run-through`. Pipes files through one or more shell commands. |
-| run-through | [README](docs/README.run-through.md) | Pipes files through one or more shell commands. Supports bundle exec, dry-run mode, and per-file execution. |
-| set-random-background-color | [README](docs/README.set-random-background-color.md) | Sets iTerm2 background to a random dark color from a palette of 256 options. |
-| touchp | [README](docs/README.touchp.md) | Creates a file and all parent directories in its path. Combines `mkdir -p` and `touch`. |
+| Tool | Category | README | Description |
+|------|----------|--------|-------------|
+| alias-directory | Terminal & Shell | [README](docs/README.alias-directory.md) | Creates and manages shell directory aliases stored in `~/.alias-directoryrc` for quick `cd` navigation. |
+| ascii-banner | Terminal & Shell | [README](docs/README.ascii-banner.md) | Creates ASCII art banners from text with color, rainbow effects, auto-scaling, margins, and watch mode for terminal resize. |
+| brew-upgrade-with-logs | System | [README](docs/README.brew-upgrade-with-logs.md) | Runs `brew update && brew upgrade` while logging output to timestamped files in `~/.brew-upgrades/`. |
+| codep | File Creation | [README](docs/README.codep.md) | Creates a file (with parent directories) and opens it in VS Code. Combines `touchp` and `code`. |
+| code+x | File Creation | [README](docs/README.code+x.md) | Creates an executable file (with parent directories) and opens it in VS Code. Combines `touchp`, `chmod +x`, and `code`. |
+| grab-column | Text Processing | [README](docs/README.grab-column.md) | Extracts specific columns from stdin by column number. Like `awk '{print $N}'` but simpler. |
+| grab-pattern | Text Processing | [README](docs/README.grab-pattern.md) | Extracts text matching regex patterns from stdin. Supports multiple patterns and capture groups. |
+| group-by | Text Processing | [README](docs/README.group-by.md) | Groups stdin lines by regex pattern matches, with optional multiline support and summary output. |
+| queue-commands | Command Execution | [README](docs/README.queue-commands.md) | Runs commands from a file sequentially, pausing on failures for interactive fixing. |
+| retry-command | Command Execution | [README](docs/README.retry-command.md) | Retries a command until it succeeds, with configurable delay and retry limits. |
+| reverse | Text Processing | [README](docs/README.reverse.md) | Reverses the order of lines from stdin. |
+| rspec-paste-failures | Command Execution | [README](docs/README.rspec-paste-failures.md) | Converts RSpec failure output into a runnable rspec command with file:line references. |
+| rt | Command Execution | [README](docs/README.rt.md) | Alias for `run-through`. Pipes files through one or more shell commands. |
+| run-through | Command Execution | [README](docs/README.run-through.md) | Pipes files through one or more shell commands. Supports bundle exec, dry-run mode, and per-file execution. |
+| set-random-background-color | Terminal & Shell | [README](docs/README.set-random-background-color.md) | Sets iTerm2 background to a random dark color from a palette of 256 options. |
+| touchp | File Creation | [README](docs/README.touchp.md) | Creates a file and all parent directories in its path. Combines `mkdir -p` and `touch`. |
+
+## By Category
+
+### Text Processing
+Transform text streams (stdin → stdout).
+
+| Tool | Description |
+|------|-------------|
+| grab-column | Extract columns by number |
+| grab-pattern | Extract text matching regex patterns |
+| group-by | Group lines by pattern matches |
+| reverse | Reverse line order |
+
+### File Creation
+Create files and directories.
+
+| Tool | Description |
+|------|-------------|
+| touchp | Create file with parent directories |
+| codep | Create file and open in VS Code |
+| code+x | Create executable and open in VS Code |
+
+### Command Execution
+Run and orchestrate commands.
+
+| Tool | Description |
+|------|-------------|
+| queue-commands | Run commands sequentially from a file |
+| retry-command | Retry until success |
+| run-through | Pipe files through commands |
+| rt | Alias for run-through |
+| rspec-paste-failures | Convert RSpec failures to runnable command |
+
+### Terminal & Shell
+Shell navigation and terminal customization.
+
+| Tool | Description |
+|------|-------------|
+| alias-directory | Directory aliases for quick `cd` navigation |
+| ascii-banner | ASCII art banners with color and effects |
+| set-random-background-color | Random iTerm2 background color |
+
+### System
+System maintenance utilities.
+
+| Tool | Description |
+|------|-------------|
+| brew-upgrade-with-logs | Homebrew upgrade with logging |
 
 ## Installation
 
