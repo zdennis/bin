@@ -109,4 +109,37 @@ RSpec.describe "ascii-banner" do
       expect(result).to be_success
     end
   end
+
+  describe "--max-lines" do
+    it "strips trailing blank lines from characters with empty bottom rows" do
+      without = run_ascii_banner("--no-auto-scale", "'")
+      with_max = run_ascii_banner("--no-auto-scale", "--max-lines", "'")
+
+      without_lines = without.stdout.lines
+      with_lines = with_max.stdout.lines
+
+      expect(with_lines.length).to be < without_lines.length
+      expect(with_lines.last.strip).not_to be_empty
+      expect(with_max).to be_success
+    end
+
+    it "strips trailing blank lines added by bottom margin" do
+      without = run_ascii_banner("--no-auto-scale", "--margin", "2", "HI")
+      with_max = run_ascii_banner("--no-auto-scale", "--margin", "2", "--max-lines", "HI")
+
+      without_lines = without.stdout.lines
+      with_lines = with_max.stdout.lines
+
+      expect(with_lines.length).to be < without_lines.length
+      expect(with_max).to be_success
+    end
+
+    it "preserves all lines when there are no trailing blank lines" do
+      without = run_ascii_banner("--no-auto-scale", "HI")
+      with_max = run_ascii_banner("--no-auto-scale", "--max-lines", "HI")
+
+      expect(with_max.stdout.lines.length).to eq(without.stdout.lines.length)
+      expect(with_max).to be_success
+    end
+  end
 end

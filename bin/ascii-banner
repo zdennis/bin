@@ -996,7 +996,8 @@ class AsciiBanner
       watch: false,
       margin: { top: 0, bottom: 0, left: 0, right: 0 },
       size: "medium",
-      auto_scale: true
+      auto_scale: true,
+      max_lines: false
     }
   end
 
@@ -1137,6 +1138,10 @@ class AsciiBanner
 
       opts.on("--minimal", "Hide footer in interactive modes (watch/rotate)") do
         @options[:minimal] = true
+      end
+
+      opts.on("--max-lines", "Strip trailing blank lines from output") do
+        @options[:max_lines] = true
       end
 
       opts.on("-m", "--margin [MARGIN]", "Set margin: N, ROW,COL, or TOP,BOT,LEFT,RIGHT (default: 0)") do |m|
@@ -1288,6 +1293,11 @@ class AsciiBanner
     # Apply margin
     if @options[:margin]
       rows = apply_margin(rows)
+    end
+
+    # Strip trailing blank lines if --max-lines is set
+    if @options[:max_lines]
+      rows.pop while rows.last&.match?(/\A\s*\z/)
     end
 
     rows.join("\n")
