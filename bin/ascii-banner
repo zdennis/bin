@@ -32,7 +32,7 @@ require "optparse"
 require "io/console"
 
 class AsciiBanner
-  VERSION = "1.1.0"
+  VERSION = "1.2.0"
 
   # Block-style ASCII font (6 rows tall, variable width)
   ASCII_FONT = {
@@ -997,7 +997,8 @@ class AsciiBanner
       margin: { top: 0, bottom: 0, left: 0, right: 0 },
       size: "medium",
       auto_scale: true,
-      max_lines: false
+      max_lines: false,
+      skip_vertical_center: false
     }
   end
 
@@ -1114,6 +1115,10 @@ class AsciiBanner
 
       opts.on("--right", "Right-align text") do
         @options[:align] = :right
+      end
+
+      opts.on("--skip-vertical-center", "With --center, only center horizontally") do
+        @options[:skip_vertical_center] = true
       end
 
       opts.on("-c", "--color COLOR", "Color name (use --list-colors to see available)") do |c|
@@ -1414,11 +1419,14 @@ class AsciiBanner
       rows = rows.map { |row| (" " * h_padding) + row }
 
       # Vertical centering (account for margin)
-      available_height = terminal_height - margin[:top] - margin[:bottom]
-      v_padding = [(available_height - rows.length) / 2, 0].max
-      top_rows = Array.new(v_padding, "")
-      bottom_rows = Array.new(v_padding, "")
-      top_rows + rows + bottom_rows
+      unless @options[:skip_vertical_center]
+        available_height = terminal_height - margin[:top] - margin[:bottom]
+        v_padding = [(available_height - rows.length) / 2, 0].max
+        top_rows = Array.new(v_padding, "")
+        bottom_rows = Array.new(v_padding, "")
+        rows = top_rows + rows + bottom_rows
+      end
+      rows
     when :right
       padding = [width - art_width, 0].max
       rows.map { |row| (" " * padding) + row }
