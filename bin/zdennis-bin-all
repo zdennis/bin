@@ -7,7 +7,7 @@
 # This is a meta-package that installs all zdennis/bin tools.
 # Run this command to see what's included.
 
-VERSION="1.1.2"
+VERSION="1.2.0"
 
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
   echo "zdennis-bin-all $VERSION"
@@ -27,15 +27,15 @@ fi
 
 echo "zdennis/bin tools v$VERSION (installed via 'brew install zdennis/bin/zdennis-bin-all'):"
 echo ""
-echo "  alias-directory (1.0.0)           - Manage directory aliases for quick navigation"
-echo "  ascii-banner (1.0.0)              - Create ASCII art banners with color and styling"
+echo "  alias-directory (1.0.0)           - Manage directory aliases for quick cd navigation"
+echo "  ascii-banner (1.1.0)              - Create ASCII art banners with color, sizing, and alignment options"
 echo "  code+x (1.0.0)                    - Create executable files and open them in VS Code"
-echo "  codep (1.0.0)                     - Run commands in parallel with formatted output"
-echo "  queue-commands (1.0.0)            - Queue and execute commands sequentially"
-echo "  retry-command (1.0.0)             - Retry failed commands with configurable attempts"
-echo "  run-through (1.1.0)               - Run a command through multiple directories"
-echo "  set-random-background-color (1.0.0) - Set random terminal background color"
-echo "  touchp (1.0.0)                    - Touch files, creating parent directories as needed"
+echo "  codep (1.0.0)                     - Touch files with parent directories and open them in VS Code"
+echo "  queue-commands (1.0.0)            - Run commands from a file sequentially, pausing on errors"
+echo "  retry-command (1.0.1)             - Retry commands with configurable delay, limits, and supervisor mode"
+echo "  run-through (1.1.0)               - Run files through multiple shell commands"
+echo "  set-random-background-color (1.0.0) - Set iTerm2 background to a random dark color"
+echo "  touchp (1.0.0)                    - Touch a file and create parent directories in its path"
 echo ""
 echo "Note: Versions shown are what this formula installs. If you installed tools"
 echo "separately, you may have different versions. Use '<tool> --version' to check."
