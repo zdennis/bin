@@ -32,7 +32,7 @@ require "optparse"
 require "io/console"
 
 class AsciiBanner
-  VERSION = "1.2.0"
+  VERSION = "1.3.0"
 
   # Block-style ASCII font (6 rows tall, variable width)
   ASCII_FONT = {
@@ -637,6 +637,7 @@ class AsciiBanner
     " " => ["  ", "  ", "  "]
   }.freeze
 
+
   # Small font (4 rows tall) - designed for legibility
   SMALL_FONT = {
     "A" => [" ██ ", "█  █", "████", "█  █"],
@@ -685,6 +686,7 @@ class AsciiBanner
   }.freeze
 
   FONT_HEIGHT = 6
+  MICRO_FONT_HEIGHT = 1
   TINY_FONT_HEIGHT = 3
   SMALL_FONT_HEIGHT = 4
 
@@ -963,6 +965,7 @@ class AsciiBanner
 
   # Size presets: name => [vertical_scale, horizontal_scale]
   SIZE_SCALES = {
+    "micro"  => [0.33, 0.33],
     "tiny"   => [0.5, 0.5],
     "small"  => [0.67, 0.67],
     "medium" => [1, 1],
@@ -972,6 +975,7 @@ class AsciiBanner
 
   # Size shortcuts: short => full name
   SIZE_ALIASES = {
+    "mc" => "micro",
     "t"  => "tiny",
     "s"  => "small",
     "m"  => "medium",
@@ -981,7 +985,7 @@ class AsciiBanner
   }.freeze
 
   # Order for rotating through sizes
-  ROTATION_SIZES = %w[tiny small medium large xlarge].freeze
+  ROTATION_SIZES = %w[micro tiny small medium large xlarge].freeze
 
   def initialize(argv)
     @argv = argv
@@ -1153,7 +1157,7 @@ class AsciiBanner
         @options[:margin] = parse_margin(m)
       end
 
-      opts.on("-s", "--size SIZE", "Font size: t|tiny, s|small, m|medium, l|large, xl|xlarge, r|rotate") do |s|
+      opts.on("-s", "--size SIZE", "Font size: mc|micro, t|tiny, s|small, m|medium, l|large, xl|xlarge, r|rotate") do |s|
         @options[:size] = SIZE_ALIASES[s] || s
         @options[:auto_scale] = false  # Explicit size disables auto-scale
       end
@@ -1250,66 +1254,76 @@ class AsciiBanner
       @options[:color] = COLORS_256.keys.sample
     end
 
-    # Auto-scale: find best size for terminal
+    # Determine size and lines (auto-scale handles word wrapping)
+    lines = [text]
     if @options[:auto_scale]
-      @options[:size] = calculate_best_size(text)
+      @options[:size], lines = calculate_best_size(text)
+    else
+      # Even without auto-scale, word-wrap if text is too wide
+      margin_h = @options[:margin] ? @options[:margin][:left] + @options[:margin][:right] : 0
+      available_width = @options[:width] - margin_h
+      if calculate_text_width(text, @options[:size]) > available_width
+        lines = word_wrap(text, @options[:size], available_width)
+      end
     end
 
-    # Convert to uppercase for the font
-    text = text.upcase
-
-    # Select font based on size
     font, font_height = select_font
 
-    # Generate ASCII art rows
-    rows = text_to_ascii_art(text, font, font_height)
-    art_width = rows.first&.length || 0
+    # Render each line and combine
+    all_rows = []
+    lines.each_with_index do |line, i|
+      if @options[:size] == "micro"
+        rows = [line.upcase]
+      else
+        rows = text_to_ascii_art(line.upcase, font, font_height)
 
-    # Truncate if wider than max width
-    if art_width > @options[:width]
-      avg_char_width = 6
-      max_chars = (@options[:width] / avg_char_width) - 1
-      text = text[0...max_chars]
-      rows = text_to_ascii_art(text, font, font_height)
-      art_width = rows.first&.length || 0
+        if @options[:height] && @options[:height] < font_height
+          rows = scale_height(rows, @options[:height])
+        end
+
+        if @options[:size] == "large" || @options[:size] == "xlarge"
+          rows = scale_size(rows)
+        end
+      end
+
+      all_rows.concat(rows)
+      all_rows << "" if i < lines.length - 1  # gap between lines
     end
 
-    # Apply height scaling if specified and needed
-    if @options[:height] && @options[:height] < font_height
-      rows = scale_height(rows, @options[:height])
-    end
-
-    # Apply size scaling (only for large/xlarge which scale up)
-    if @options[:size] == "large" || @options[:size] == "xlarge"
-      rows = scale_size(rows)
-      art_width = rows.first&.length || 0  # Recalculate after scaling
-    end
+    art_width = all_rows.map(&:length).max || 0
 
     # Apply alignment
-    rows = align_rows(rows, art_width)
+    all_rows = align_rows(all_rows, art_width)
 
     # Apply color
     if @options[:rainbow]
-      rows = apply_rainbow(rows, @options[:color])
+      all_rows = apply_rainbow(all_rows, @options[:color])
     elsif @options[:color]
-      rows = apply_color(rows, @options[:color])
+      all_rows = apply_color(all_rows, @options[:color])
+    end
+
+    # Apply bold for micro size
+    if @options[:size] == "micro"
+      all_rows = all_rows.map { |row| row.empty? ? row : "\e[1m#{row}\e[0m" }
     end
 
     # Apply margin
     if @options[:margin]
-      rows = apply_margin(rows)
+      all_rows = apply_margin(all_rows)
     end
 
     # Strip trailing blank lines if --max-lines is set
     if @options[:max_lines]
-      rows.pop while rows.last&.match?(/\A\s*\z/)
+      all_rows.pop while all_rows.last&.match?(/\A\s*\z/)
     end
 
-    rows.join("\n")
+    all_rows.join("\n")
   end
 
   def select_font
     case @options[:size]
+    when "micro"
+      [nil, MICRO_FONT_HEIGHT]
     when "tiny"
       [TINY_FONT, TINY_FONT_HEIGHT]
     when "small"
@@ -1319,11 +1333,20 @@ class AsciiBanner
     end
   end
 
+  SIZE_HEIGHTS = {
+    "xlarge" => 18,
+    "large"  => 12,
+    "medium" => 6,
+    "small"  => 4,
+    "tiny"   => 3,
+    "micro"  => 1
+  }.freeze
+
+  # Returns [size, lines] where lines is an array of text strings
   def calculate_best_size(text)
     term_height = terminal_height
-    term_width = terminal_width
+    term_width = @options[:width] || terminal_width
 
-    # Calculate margin overhead
     margin_v = 0
     margin_h = 0
     if @options[:margin]
@@ -1331,40 +1354,78 @@ class AsciiBanner
       margin_h = @options[:margin][:left] + @options[:margin][:right]
     end
 
-    available_height = term_height - margin_v - 1  # -1 for prompt
+    available_height = term_height - margin_v - 1
     available_width = term_width - margin_h
 
-    # Height for each size: tiny=3, small=4, medium=6, large=12, xlarge=18
-    size_heights = {
-      "xlarge" => 18,
-      "large"  => 12,
-      "medium" => 6,
-      "small"  => 4,
-      "tiny"   => 3
-    }
+    sizes = %w[xlarge large medium small tiny micro]
 
-    # Approximate width per character for each size
-    size_char_widths = {
-      "xlarge" => 18,  # 6 * 3
-      "large"  => 12,  # 6 * 2
-      "medium" => 6,
-      "small"  => 5,
-      "tiny"   => 4
-    }
+    # For each size (largest first), check if text fits on one line or with word wrapping
+    sizes.each do |size|
+      line_height = SIZE_HEIGHTS[size]
 
-    text_len = text.length
+      # Try single line first
+      if calculate_text_width(text, size) <= available_width && line_height <= available_height
+        return [size, [text]]
+      end
 
-    # Find largest size that fits both height and width
-    %w[xlarge large medium small tiny].each do |size|
-      height = size_heights[size]
-      width = text_len * size_char_widths[size]
-
-      if height <= available_height && width <= available_width
-        return size
+      # Try word wrapping
+      lines = word_wrap(text, size, available_width)
+      gap = 1
+      total_height = lines.length * line_height + (lines.length - 1) * gap
+      all_fit = lines.all? { |line| calculate_text_width(line, size) <= available_width }
+      if total_height <= available_height && all_fit
+        return [size, lines]
       end
     end
 
-    "tiny"  # Fallback to smallest
+    # Fallback: tiny with word wrap regardless of height
+    ["tiny", word_wrap(text, "tiny", available_width)]
+  end
+
+  def calculate_text_width(text, size)
+    return text.length if size == "micro"
+
+    font = case size
+           when "tiny" then TINY_FONT
+           when "small" then SMALL_FONT
+           else ASCII_FONT
+           end
+
+    scale = case size
+            when "large" then 2
+            when "xlarge" then 3
+            else 1
+            end
+
+    width = text.upcase.each_char.sum do |char|
+      pattern = font[char] || font[" "]
+      pattern.first.length + 1
+    end
+
+    width * scale
+  end
+
+  def word_wrap(text, size, available_width)
+    words = text.split(/(\s+)/)
+    lines = []
+    current_line = ""
+
+    words.each do |word|
+      if word.match?(/\A\s+\z/)
+        current_line += word unless current_line.empty?
+        next
+      end
+
+      test_line = current_line.empty? ? word : "#{current_line} #{word}"
+      if calculate_text_width(test_line, size) <= available_width
+        current_line = test_line
+      else
+        lines << current_line unless current_line.empty?
+        current_line = word
+      end
+    end
+    lines << current_line unless current_line.empty?
+    lines.map(&:strip)
   end
 
   def text_to_ascii_art(text, font = ASCII_FONT, font_height = FONT_HEIGHT)
