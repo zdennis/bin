@@ -7,7 +7,7 @@
 # This is a meta-package that installs all zdennis/bin tools.
 # Run this command to see what's included.
 
-VERSION="1.3.0"
+VERSION="1.4.0"
 
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
   echo "zdennis-bin-all $VERSION"
@@ -36,6 +36,7 @@ echo "  retry-command (1.0.1)             - Retry commands with configurable del
 echo "  run-through (1.1.0)               - Run files through multiple shell commands"
 echo "  set-random-background-color (1.0.0) - Set iTerm2 background to a random dark color"
 echo "  touchp (1.0.0)                    - Touch a file and create parent directories in its path"
+echo "  window-tool (0.2.0)               - Fast macOS CLI for listing, moving, and resizing application windows"
 echo ""
 echo "Note: Versions shown are what this formula installs. If you installed tools"
 echo "separately, you may have different versions. Use '<tool> --version' to check."
