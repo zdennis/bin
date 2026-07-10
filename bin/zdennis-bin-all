@@ -7,7 +7,7 @@
 # This is a meta-package that installs all zdennis/bin tools.
 # Run this command to see what's included.
 
-VERSION="1.26.5"
+VERSION="1.27.0"
 
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
   echo "zdennis-bin-all $VERSION"
@@ -31,7 +31,7 @@ echo "  alias-directory (1.0.0)           - Manage directory aliases for quick c
 echo "  ascii-banner (1.3.0)              - Create ASCII art banners with color, sizing, and alignment options"
 echo "  code+x (1.0.0)                    - Create executable files and open them in VS Code"
 echo "  codep (1.0.0)                     - Touch files with parent directories and open them in VS Code"
-echo "  html-viewer (0.9.0)               - Always-on-top macOS window for viewing HTML files and URLs from the CLI"
+echo "  html-viewer (0.10.0)              - Always-on-top macOS window for viewing HTML files and URLs from the CLI"
 echo "  queue-commands (1.0.0)            - Run commands from a file sequentially, pausing on errors"
 echo "  retry-command (1.0.1)             - Retry commands with configurable delay, limits, and supervisor mode"
 echo "  run-through (1.1.0)               - Run files through multiple shell commands"
