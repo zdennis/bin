@@ -1,0 +1,199 @@
+#!/usr/bin/env ruby
+
+require "optparse"
+require "yaml"
+require "fileutils"
+require "tmpdir"
+require "shellwords"
+
+def install_missing_gem(name, version:)
+  loop do
+    puts "The #{name} #{version} gem is missing. Install? [Yn]"
+    answer = gets
+    if answer =~ /y/i
+      system "gem install #{name} -v #{version}"
+      break
+    elsif answer =~ /n/i
+      exit 1
+    end
+  end
+end
+
+def require_or_install(name, version:, require_as: name)
+  require require_as
+rescue LoadError
+  begin
+    install_missing_gem name, version: version
+    Gem.refresh
+    require require_as
+  rescue
+    puts "#{name} #{version} could not be installed. You will need to install it manually."
+  end
+end
+
+require_or_install 'term-ansicolor', version: '1.7.1', require_as: 'term/ansicolor'
+
+CONFIG_DIR = File.expand_path("~/.config/send-message")
+CONFIG_FILE = File.join(CONFIG_DIR, "config.yml")
+
+VALID_TYPES = %w[message sms]
+
+# Recipients that contain letters are treated as an email address or a
+# Messages "buddy" name and passed through untouched. Anything else is
+# treated as a phone number: non-numeric characters are stripped and the
+# result must be 11 digits (country code + area code + number), e.g.
+# 15555555555, not 5555555555.
+def normalize_recipient(str)
+  return str if str =~ /[a-zA-Z]/
+
+  digits = str.gsub(/\D/, "")
+
+  if digits.length != 11
+    puts Term::ANSIColor.red("Invalid phone number: #{str.inspect}. Phone numbers must have 11 digits, e.g. 15555555555 (not 5555555555).")
+    exit 1
+  end
+
+  digits
+end
+
+def load_config
+  return nil unless File.exist?(CONFIG_FILE)
+  YAML.load_file(CONFIG_FILE) || {}
+end
+
+def run_init
+  FileUtils.mkdir_p(CONFIG_DIR)
+
+  print "Enter your default phone number (or email) for iMessage/SMS: "
+  number = normalize_recipient($stdin.gets.to_s.strip)
+
+  print "Enter your preferred default message type (message/sms) [message]: "
+  type = $stdin.gets.to_s.strip
+  type = "message" if type.empty?
+
+  unless VALID_TYPES.include?(type)
+    puts Term::ANSIColor.red("Invalid message type: #{type}. Must be one of: #{VALID_TYPES.join(', ')}")
+    exit 1
+  end
+
+  config = { "number" => number, "type" => type }
+  File.write(CONFIG_FILE, config.to_yaml)
+
+  puts Term::ANSIColor.green("Config written to #{CONFIG_FILE}")
+end
+
+options = {}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: send-message [options]"
+
+  opts.on("-t TYPE", "--type TYPE", "Message type: message or sms") do |v|
+    options[:type] = v
+  end
+
+  opts.on("-n NUMBER", "--number NUMBER", "Recipient phone number (11 digits, e.g. 15555555555), email, or name") do |v|
+    options[:number] = v
+  end
+
+  opts.on("-m MESSAGE", "--message MESSAGE", "Message body to send") do |v|
+    options[:message] = v
+  end
+
+  opts.on("--init", "Create ~/.config/send-message/config.yml with your defaults") do
+    options[:init] = true
+  end
+
+  opts.on("-h", "--help", "Prints help") do
+    puts opts
+    puts <<~MESSAGE
+
+      Sends a message to yourself (or to a given number/email/name) via Messages.app.
+
+      Defaults for --type and --number are read from #{CONFIG_FILE}.
+      Run --init to create that file interactively.
+
+      Phone numbers must include the country code and have 11 digits total,
+      e.g. 15555555555, not 5555555555. Non-numeric characters are stripped,
+      so "+1 (555) 555-5555" is accepted and normalized to 15555555555.
+      Email addresses and Messages buddy names are passed through as-is.
+
+      Note: osascript exits successfully even if Messages.app fails to
+      deliver (e.g. unknown buddy, iMessage/SMS not set up for that
+      service). This script cannot detect that. After changing your
+      defaults or number, manually verify the message actually arrives.
+
+      Example usage:
+
+        # send using defaults from config
+        send-message --message "on my way"
+
+        # send an SMS to a specific number
+        send-message --type sms --number 15555555555 --message "hello"
+
+        # formatted numbers are normalized automatically
+        send-message --type sms --number "+1 (555) 555-5555" --message "hello"
+    MESSAGE
+
+    exit
+  end
+end.parse!
+
+if options[:init]
+  run_init
+  exit
+end
+
+config = load_config
+
+if config.nil?
+  puts Term::ANSIColor.yellow("Warning: config file not found at #{CONFIG_FILE}")
+  puts Term::ANSIColor.yellow("Run `send-message --init` to set up your defaults.")
+  config = {}
+end
+
+type = options[:type] || config["type"]
+number = options[:number] || config["number"]
+message = options[:message]
+
+if type.nil? || number.nil?
+  puts Term::ANSIColor.red("Missing --type/--number and no defaults found in config. Run `send-message --init`.")
+  exit 1
+end
+
+unless VALID_TYPES.include?(type)
+  puts Term::ANSIColor.red("Invalid message type: #{type}. Must be one of: #{VALID_TYPES.join(', ')}")
+  exit 1
+end
+
+number = normalize_recipient(number)
+
+if message.nil? || message.empty?
+  puts Term::ANSIColor.red("Missing --message")
+  exit 1
+end
+
+service_type = type == "sms" ? "SMS" : "iMessage"
+
+def applescript_string_literal(str)
+  str.gsub('\\', '\\\\\\\\').gsub('"', '\\"')
+end
+
+script = <<~APPLESCRIPT
+  tell application "Messages"
+      send "#{applescript_string_literal(message)}" to buddy "#{applescript_string_literal(number)}" of (1st service whose service type = #{service_type})
+  end tell
+APPLESCRIPT
+
+Dir.mktmpdir do |dir|
+  script_path = File.join(dir, "send-message.applescript")
+  File.write(script_path, script)
+
+  system "osascript", script_path
+
+  unless $?.success?
+    puts Term::ANSIColor.red("Failed to send message via osascript.")
+    exit 1
+  end
+end
+
+puts Term::ANSIColor.green("Message sent to #{number} via #{type}.")
