@@ -1,0 +1,248 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'optparse'
+require 'open3'
+
+def install_missing_gem(name, version:)
+  loop do
+    puts "The #{name} #{version} gem is missing. Install? [Yn]"
+    answer = gets
+    if answer =~ /y/i
+      system "gem install #{name} -v #{version}"
+      break
+    elsif answer =~ /n/i
+      exit 1
+    end
+  end
+end
+
+def require_or_install(name, version:, require_as: name)
+  require require_as
+rescue LoadError
+  begin
+    install_missing_gem name, version: version
+    Gem.refresh
+    require require_as
+  rescue
+    puts "#{name} #{version} could not be installed. You will need to install it manually."
+  end
+end
+
+require_or_install 'term-ansicolor', version: '1.7.1', require_as: 'term/ansicolor'
+
+USAGE = <<~USAGE
+  Usage: iterm2-cli <command> [options]
+
+  Commands:
+    split --horizontal|--vertical
+    run COMMAND --horizontal|--vertical [--close]
+
+  Options:
+    --horizontal    Split into a new horizontal pane
+    --vertical      Split into a new vertical pane
+    --close         (run only) Close the pane after the command finishes
+
+  Examples:
+    iterm2-cli split --horizontal
+    iterm2-cli split --vertical
+    iterm2-cli run "npm test" --horizontal
+    iterm2-cli run "tail -f log/development.log" --vertical --close
+USAGE
+
+def run_applescript(script)
+  require 'tempfile'
+  tf = Tempfile.new(['iterm2-cli', '.applescript'])
+  tf.write(script)
+  tf.flush
+  output, status = Open3.capture2e('osascript', tf.path)
+  tf.close
+  tf.unlink
+  unless status.success?
+    puts Term::ANSIColor.red("iterm2-cli: AppleScript error: #{output.strip}")
+    exit 1
+  end
+end
+
+# Escapes a string for embedding inside an AppleScript double-quoted string.
+def as_escape(str)
+  str.gsub('\\', '\\\\\\\\').gsub('"', '\\"')
+end
+
+def effective_tty
+  if ENV['TMUX']
+    out, status = Open3.capture2('tmux', 'display-message', '-p', '#{client_tty}')
+    return out.strip if status.success? && !out.strip.empty?
+  end
+  `tty`.strip
+end
+
+def split_pane(direction, command: nil, close: false)
+  if ENV['TMUX']
+    split_pane_tmux(direction, command: command, close: close)
+  else
+    split_pane_applescript(direction, command: command, close: close)
+  end
+end
+
+# In tmux (including iTerm2 tmux -CC integration), tmux splits ARE iTerm2 pane
+# splits — AppleScript split calls silently no-op on tmux-mapped sessions.
+def split_pane_tmux(direction, command: nil, close: false)
+  # tmux -h = side-by-side (iTerm2 "vertical"); tmux -v = top/bottom (iTerm2 "horizontal")
+  flag = direction == :horizontal ? '-v' : '-h'
+  args = ['tmux', 'split-window', flag]
+  if command
+    # Without --close, keep a shell open after the command finishes.
+    cmd = close ? command : "#{command}; exec $SHELL"
+    args << cmd
+  end
+  unless system(*args)
+    puts Term::ANSIColor.red("iterm2-cli: tmux split-window failed")
+    exit 1
+  end
+end
+
+def split_pane_applescript(direction, command: nil, close: false)
+  split_method = direction == :horizontal ? 'split horizontally' : 'split vertically'
+  tty = `tty`.strip
+  escaped_tty = as_escape(tty)
+
+  script = if command
+    cmd = close ? "#{command} ; exit" : command
+    escaped = as_escape(cmd)
+    <<~APPLESCRIPT
+      tell application "iTerm2"
+        set targetTTY to "#{escaped_tty}"
+        set winIdx to 0
+        set tabIdx to 0
+        set sesIdx to 0
+        repeat with wi from 1 to count of windows
+          repeat with ti from 1 to count of tabs of window wi
+            repeat with si from 1 to count of sessions of tab ti of window wi
+              if tty of session si of tab ti of window wi = targetTTY then
+                set winIdx to wi
+                set tabIdx to ti
+                set sesIdx to si
+              end if
+            end repeat
+          end repeat
+        end repeat
+        if winIdx = 0 then
+          error "iterm2-cli: no iTerm2 session found for TTY " & targetTTY
+        end if
+        tell session sesIdx of tab tabIdx of window winIdx
+          set newSession to #{split_method} with default profile
+          tell newSession to write text "#{escaped}"
+        end tell
+      end tell
+    APPLESCRIPT
+  else
+    <<~APPLESCRIPT
+      tell application "iTerm2"
+        set targetTTY to "#{escaped_tty}"
+        set winIdx to 0
+        set tabIdx to 0
+        set sesIdx to 0
+        repeat with wi from 1 to count of windows
+          repeat with ti from 1 to count of tabs of window wi
+            repeat with si from 1 to count of sessions of tab ti of window wi
+              if tty of session si of tab ti of window wi = targetTTY then
+                set winIdx to wi
+                set tabIdx to ti
+                set sesIdx to si
+              end if
+            end repeat
+          end repeat
+        end repeat
+        if winIdx = 0 then
+          error "iterm2-cli: no iTerm2 session found for TTY " & targetTTY
+        end if
+        tell session sesIdx of tab tabIdx of window winIdx
+          #{split_method} with default profile
+        end tell
+      end tell
+    APPLESCRIPT
+  end
+
+  run_applescript(script)
+end
+
+# --- Subcommand dispatch ---
+
+subcommand = ARGV.shift
+
+case subcommand
+when nil, '-h', '--help', 'help'
+  puts USAGE
+  exit 0
+
+when 'debug-tty'
+  tty = effective_tty
+  puts "effective_tty: #{tty}"
+  script = <<~APPLESCRIPT
+    tell application "iTerm2"
+      set output to ""
+      repeat with wi from 1 to count of windows
+        set output to output & "window " & wi & " (id=" & id of window wi & "):\\n"
+        repeat with ti from 1 to count of tabs of window wi
+          repeat with si from 1 to count of sessions of tab ti of window wi
+            set sessionTTY to tty of session si of tab ti of window wi
+            set output to output & "  tab " & ti & " session " & si & ": " & sessionTTY & "\\n"
+          end repeat
+        end repeat
+      end repeat
+      return output
+    end tell
+  APPLESCRIPT
+  require 'tempfile'
+  tf = Tempfile.new(['iterm2-cli', '.applescript'])
+  tf.write(script)
+  tf.flush
+  out, = Open3.capture2e('osascript', tf.path)
+  tf.close; tf.unlink
+  puts out
+  exit 0
+
+when 'split'
+  direction = nil
+  OptionParser.new do |o|
+    o.banner = "Usage: iterm2-cli split --horizontal|--vertical"
+    o.on('--horizontal', 'Split into a new horizontal pane') { direction = :horizontal }
+    o.on('--vertical',   'Split into a new vertical pane')   { direction = :vertical }
+  end.parse!(ARGV)
+
+  unless direction
+    puts Term::ANSIColor.red("iterm2-cli split: requires --horizontal or --vertical")
+    exit 1
+  end
+
+  split_pane(direction)
+
+when 'run'
+  direction = nil
+  close = false
+  OptionParser.new do |o|
+    o.banner = "Usage: iterm2-cli run COMMAND --horizontal|--vertical [--close]"
+    o.on('--horizontal', 'Split into a new horizontal pane') { direction = :horizontal }
+    o.on('--vertical',   'Split into a new vertical pane')   { direction = :vertical }
+    o.on('--close',      'Close pane after command finishes') { close = true }
+  end.parse!(ARGV)
+
+  command = ARGV.shift
+  if command.nil? || command.empty?
+    puts Term::ANSIColor.red("iterm2-cli run: requires a COMMAND argument")
+    exit 1
+  end
+
+  unless direction
+    puts Term::ANSIColor.red("iterm2-cli run: requires --horizontal or --vertical")
+    exit 1
+  end
+
+  split_pane(direction, command: command, close: close)
+
+else
+  puts Term::ANSIColor.red("iterm2-cli: unknown command '#{subcommand}'")
+  puts "Run 'iterm2-cli --help' for usage."
+  exit 1
+end
