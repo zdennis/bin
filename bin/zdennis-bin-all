@@ -7,7 +7,7 @@
 # This is a meta-package that installs all zdennis/bin tools.
 # Run this command to see what's included.
 
-VERSION="1.29.3"
+VERSION="1.29.4"
 
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
   echo "zdennis-bin-all $VERSION"
@@ -38,7 +38,7 @@ echo "  retry-command (1.0.1)               - Retry commands with configurable d
 echo "  run-through (1.1.0)                 - Run files through multiple shell commands"
 echo "  set-random-background-color (1.0.0) - Set iTerm2 background to a random dark color"
 echo "  touchp (1.0.0)                      - Touch a file and create parent directories in its path"
-echo "  window-tool (0.17.0)                - Fast macOS CLI for listing, moving, and resizing application windows"
+echo "  window-tool (0.17.1)                - Fast macOS CLI for listing, moving, and resizing application windows"
 echo "  work-coordinator (0.14.0)           - Route messages to AI agents running in tmux panes"
 echo "  workspace (0.22.0)                  - Manage tmuxinator-based development workspaces in iTerm2"
 echo ""
